@@ -81,20 +81,10 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
           );
   }
 
-  Rect get _defaultArea {
-    final height = widget.aspectRatio == null || widget.aspectRatio == 0.0 ? 1.0 : 1.0 / widget.aspectRatio;
-    return Rect.fromLTWH(
-      0.0,
-      (1.0 - height) / 2,
-      1.0,
-      height,
-    );
-  }
-
   @override
   void initState() {
     super.initState();
-    _area = _defaultArea;
+    _area = Rect.zero;
     _view = Rect.zero;
     _scale = 1.0;
     _ratio = 1.0;
@@ -122,8 +112,11 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   @override
   void didUpdateWidget(Crop oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _area = _defaultArea;
-    if (widget.image != oldWidget.image) _getImage();
+    if (widget.image != oldWidget.image) {
+      _getImage();
+    } else if (widget.aspectRatio != oldWidget.aspectRatio) {
+      _area = _calculateDefaultArea();
+    }
   }
 
   void _getImage() {
@@ -198,18 +191,28 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     });
   }
 
-  void _updateImage(ImageInfo imageInfo, bool synchronousCall) {
-    setState(() {
-      _image = imageInfo.image;
-      _scale = imageInfo.scale;
-      _ratio = max(
-        _boundaries.width / _image.width,
-        _boundaries.height / _image.height,
-      );
+  Rect _calculateDefaultArea() {
+    if (_image == null || _view.isEmpty) return Rect.zero;
+    final width = 1.0;
+    final height = (_image.width * _view.width * width) / (_image.height * _view.height * widget.aspectRatio);
+    return Rect.fromLTWH((1.0 - width) / 2, (1.0 - height) / 2, width, height);
+  }
 
-      final viewWidth = _boundaries.width / (_image.width * _scale * _ratio);
-      final viewHeight = _boundaries.height / (_image.height * _scale * _ratio);
-      _view = Rect.fromLTWH((1.0 - viewWidth) / 2, (1.0 - viewHeight) / 2, viewWidth, viewHeight);
+  void _updateImage(ImageInfo imageInfo, bool synchronousCall) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _image = imageInfo.image;
+        _scale = imageInfo.scale;
+        _ratio = max(
+          _boundaries.width / _image.width,
+          _boundaries.height / _image.height,
+        );
+
+        final viewWidth = _boundaries.width / (_image.width * _scale * _ratio);
+        final viewHeight = _boundaries.height / (_image.height * _scale * _ratio);
+        _view = Rect.fromLTWH((1.0 - viewWidth) / 2, (1.0 - viewHeight) / 2, viewWidth, viewHeight);
+        _area = _calculateDefaultArea();
+      });
     });
   }
 
@@ -340,7 +343,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
 
     // adjust to aspect ratio if needed
     if (widget.aspectRatio != null && widget.aspectRatio > 0.0) {
-      final height = _area.width / widget.aspectRatio;
+      final width = areaRight - areaLeft;
+      final height = (_image.width * _view.width * width) / (_image.height * _view.height * widget.aspectRatio);
 
       if (top != null) {
         areaTop = areaBottom - height;
