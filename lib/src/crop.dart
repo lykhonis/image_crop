@@ -81,6 +81,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
           );
   }
 
+  bool get _isEnabled => !_view.isEmpty && _image != null;
+
   @override
   void initState() {
     super.initState();
@@ -135,9 +137,9 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       child: GestureDetector(
         key: _surfaceKey,
         behavior: HitTestBehavior.opaque,
-        onScaleStart: _handleScaleStart,
-        onScaleUpdate: _handleScaleUpdate,
-        onScaleEnd: _handleScaleEnd,
+        onScaleStart: _isEnabled ? _handleScaleStart : null,
+        onScaleUpdate: _isEnabled ? _handleScaleUpdate : null,
+        onScaleEnd: _isEnabled ? _handleScaleEnd : null,
         child: CustomPaint(
           painter: _CropPainter(
             image: _image,
@@ -177,7 +179,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
 
   void _settleAnimationChanged() {
     setState(() {
-      _scale = _scaleTween.lerp(_settleController.value);
+      _scale = _scaleTween.transform(_settleController.value);
 
       final dx = _boundaries.width * (_scale - _scaleTween.begin) / (_image.width * _scaleTween.begin * _ratio);
       final dy = _boundaries.height * (_scale - _scaleTween.begin) / (_image.height * _scaleTween.begin * _ratio);
@@ -187,12 +189,12 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         _startView.top + dy / 2,
         _startView.right - dx / 2,
         _startView.bottom - dy / 2,
-      ).shift(_viewTween.lerp(_settleController.value));
+      ).shift(_viewTween.transform(_settleController.value));
     });
   }
 
   Rect _calculateDefaultArea() {
-    if (_image == null || _view.isEmpty) return Rect.zero;
+    if (!_isEnabled) return Rect.zero;
     final width = 1.0;
     final height = (_image.width * _view.width * width) / (_image.height * _view.height * widget.aspectRatio);
     return Rect.fromLTWH((1.0 - width) / 2, (1.0 - height) / 2, width, height);
