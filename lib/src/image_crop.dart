@@ -89,7 +89,7 @@ class ImageCrop {
     final widthFactor = (preferredWidth.toDouble() / width.toDouble()).clamp(0.0, 1.0);
     final heightFactor = (preferredHeight.toDouble() / height.toDouble()).clamp(0.0, 1.0);
 
-    if (widthFactor > heightFactor) {
+    if (widthFactor < heightFactor) {
       return (height * widthFactor).ceil();
     } else {
       return (width * heightFactor).ceil();
