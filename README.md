@@ -2,8 +2,11 @@
 
 A flutter plugin to crop image on iOS and Android.
 
-*Note*: This plugin is still under development, some billing features are not available yet and
-testing has been limited.
+The plugin is working with files to avoid passing large amount of data through method channels. Files are stored in cache folders of iOS and Android. Thus if there is a need to save actual croped image, ensure to copy the file to other location.
+
+All of the computation intensive work is done off a main thread via dispatch queues on iOS and cache thread pool on Android.
+
+*Note*: This plugin is still under development, some features are not available yet and testing has been limited.
 
 ## Installation
 Add `image_crop` [![image_crop](https://img.shields.io/pub/v/image_crop.svg)](https://pub.dartlang.org/packages/image_crop) as [a dependency in `pubspec.yaml`](https://flutter.io/using-packages/#managing-package-dependencies--versions).
@@ -65,4 +68,3 @@ final croppedFile = await ImageCrop.cropImage(
     area: crop.area,
 );
 ```
-All of the computation intensive work is done off a main thread via dispatch queues on iOS and cache thread pool on Android.
