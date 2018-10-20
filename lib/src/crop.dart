@@ -205,7 +205,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     if (!_isEnabled) return Rect.zero;
     final width = 1.0;
     final height = (_image.width * _view.width * width) /
-        (_image.height * _view.height * widget.aspectRatio);
+        (_image.height * _view.height * (widget.aspectRatio ?? 1.0));
     return Rect.fromLTWH((1.0 - width) / 2, (1.0 - height) / 2, width, height);
   }
 

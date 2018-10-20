@@ -2,6 +2,11 @@
 
 A flutter plugin to crop image on iOS and Android.
 
+![Image Cropping Active](assets/image_cropping_active.jpg)
+![Image Cropping Idle](assets/image_cropping_idle.jpg)
+
+The plugin comes with a `Crop` widget. The widget renders only image, overlay, and handles to crop an image. Thus it can be composed with other widgets to build custom image cropping experience. 
+
 The plugin is working with files to avoid passing large amount of data through method channels. Files are stored in cache folders of iOS and Android. Thus if there is a need to save actual croped image, ensure to copy the file to other location.
 
 All of the computation intensive work is done off a main thread via dispatch queues on iOS and cache thread pool on Android.
