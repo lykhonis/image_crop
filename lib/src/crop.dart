@@ -16,11 +16,13 @@ enum _CropHandleSide { none, topLeft, topRight, bottomLeft, bottomRight }
 class Crop extends StatefulWidget {
   final ImageProvider image;
   final double aspectRatio;
+  final bool snapImage;
 
   const Crop({
     Key key,
     this.image,
     this.aspectRatio,
+    this.snapImage = true,
   })  : assert(image != null),
         super(key: key);
 
@@ -29,6 +31,7 @@ class Crop extends StatefulWidget {
     Key key,
     double scale = 1.0,
     this.aspectRatio,
+    this.snapImage = true,
   })  : image = FileImage(file, scale: scale),
         super(key: key);
 
@@ -38,6 +41,7 @@ class Crop extends StatefulWidget {
     AssetBundle bundle,
     String package,
     this.aspectRatio,
+    this.snapImage = true,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         super(key: key);
 
@@ -224,6 +228,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
             _boundaries.height / (_image.height * _scale * _ratio);
         _view = Rect.fromLTWH((1.0 - viewWidth) / 2, (1.0 - viewHeight) / 2,
             viewWidth, viewHeight);
+
         _area = _calculateDefaultArea();
       });
     });
@@ -288,7 +293,11 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   }
 
   Offset _calculateViewOffsetInBoundaries(double targetScale) {
-    var offset = Offset(0.0, 0.0);
+    Offset offset = Offset.zero;
+
+    if(!widget.snapImage){
+      return offset;
+    }
 
     final dx = _boundaries.width *
         (targetScale - _scale) /
@@ -315,7 +324,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   void _handleScaleEnd(ScaleEndDetails details) {
     _deactivate();
 
-    final targetScale = _scale < 1.0 ? 1.0 : _scale;
+    final targetScale = _scale < 1.0 && widget.snapImage ? 1.0 : _scale;
     _scaleTween = Tween(
       begin: _scale,
       end: targetScale,
@@ -338,10 +347,10 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   }
 
   void _updateArea({double left, double top, double right, double bottom}) {
-    var areaLeft = _area.left + (left ?? 0.0);
-    var areaTop = _area.top + (top ?? 0.0);
-    var areaRight = _area.right + (right ?? 0.0);
-    var areaBottom = _area.bottom + (bottom ?? 0.0);
+    double areaLeft = _area.left + (left ?? 0.0);
+    double areaTop = _area.top + (top ?? 0.0);
+    double areaRight = _area.right + (right ?? 0.0);
+    double areaBottom = _area.bottom + (bottom ?? 0.0);
 
     // ensure minimum rectangle
     if (areaRight - areaLeft < _kCropMinFraction) {
@@ -536,6 +545,7 @@ class _CropPainter extends CustomPainter {
       rect.width * area.width,
       rect.height * area.height,
     );
+
     canvas.drawRect(Rect.fromLTRB(0.0, 0.0, rect.width, boundaries.top), paint);
     canvas.drawRect(
         Rect.fromLTRB(0.0, boundaries.bottom, rect.width, rect.height), paint);
@@ -617,7 +627,7 @@ class _CropPainter extends CustomPainter {
       ..lineTo(boundaries.left, boundaries.bottom - 1)
       ..lineTo(boundaries.left, boundaries.top);
 
-    for (var column = 1; column < _kCropGridColumnCount; column++) {
+    for (int column = 1; column < _kCropGridColumnCount; column++) {
       path
         ..moveTo(
             boundaries.left + column * boundaries.width / _kCropGridColumnCount,
@@ -627,7 +637,7 @@ class _CropPainter extends CustomPainter {
             boundaries.bottom - 1);
     }
 
-    for (var row = 1; row < _kCropGridRowCount; row++) {
+    for (int row = 1; row < _kCropGridRowCount; row++) {
       path
         ..moveTo(boundaries.left,
             boundaries.top + row * boundaries.height / _kCropGridRowCount)
