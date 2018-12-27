@@ -78,6 +78,11 @@ class ImageCrop {
     }());
 
     final options = await getImageOptions(file: file);
+    if ((options.width <= preferredSize ?? preferredWidth) &&
+        (options.height <= preferredSize ?? preferredHeight)) {
+      return file;
+    }
+
     final maximumSize = _calculateMaximumSize(
       width: options.width,
       height: options.height,
