@@ -65,7 +65,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   _CropHandleSide _handle;
   double _startScale;
   Rect _startView;
-  Tween<Offset> _viewTween;
+  Tween<Rect> _viewTween;
   Tween<double> _scaleTween;
 
   double get scale => _scale;
@@ -74,10 +74,10 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     return _view.isEmpty
         ? null
         : Rect.fromLTRB(
-            _view.left + (_view.width * _area.left),
-            _view.top + (_view.height * _area.top),
-            _view.right - (_view.width * (1.0 - _area.right)),
-            _view.bottom - (_view.height * (1.0 - _area.bottom)),
+            _view.left,
+            _view.top,
+            _view.left + _view.width * _area.width / _scale,
+            _view.top + _view.height * _area.height / _scale,
           );
   }
 
@@ -119,14 +119,25 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     if (widget.image != oldWidget.image) {
       _getImage();
     } else if (widget.aspectRatio != oldWidget.aspectRatio) {
-      _area = _calculateDefaultArea();
+      _area = _calculateDefaultArea(
+        viewWidth: _view.width,
+        viewHeight: _view.height,
+        imageWidth: _image?.width,
+        imageHeight: _image?.height,
+      );
     }
   }
 
-  void _getImage() {
+  @override
+  void reassemble() {
+    super.reassemble();
+    _getImage(force: true);
+  }
+
+  void _getImage({bool force: false}) {
     final oldImageStream = _imageStream;
     _imageStream = widget.image.resolve(createLocalImageConfiguration(context));
-    if (_imageStream.key != oldImageStream?.key) {
+    if (_imageStream.key != oldImageStream?.key || force) {
       oldImageStream?.removeListener(_updateImage);
       _imageStream.addListener(_updateImage);
     }
@@ -184,33 +195,27 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   void _settleAnimationChanged() {
     setState(() {
       _scale = _scaleTween.transform(_settleController.value);
-
-      final dx = _boundaries.width *
-          (_scale - _scaleTween.begin) /
-          (_image.width * _scaleTween.begin * _ratio);
-      final dy = _boundaries.height *
-          (_scale - _scaleTween.begin) /
-          (_image.height * _scaleTween.begin * _ratio);
-
-      _view = Rect.fromLTRB(
-        _startView.left + dx / 2,
-        _startView.top + dy / 2,
-        _startView.right - dx / 2,
-        _startView.bottom - dy / 2,
-      ).shift(_viewTween.transform(_settleController.value));
+      _view = _viewTween.transform(_settleController.value);
     });
   }
 
-  Rect _calculateDefaultArea() {
-    if (!_isEnabled) return Rect.zero;
+  Rect _calculateDefaultArea({
+    int imageWidth,
+    int imageHeight,
+    double viewWidth,
+    double viewHeight,
+  }) {
+    if (imageWidth == null || imageHeight == null) {
+      return Rect.zero;
+    }
     final width = 1.0;
-    final height = (_image.width * _view.width * width) /
-        (_image.height * _view.height * (widget.aspectRatio ?? 1.0));
+    final height = (imageWidth * viewWidth * width) /
+        (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0));
     return Rect.fromLTWH((1.0 - width) / 2, (1.0 - height) / 2, width, height);
   }
 
   void _updateImage(ImageInfo imageInfo, bool synchronousCall) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       setState(() {
         _image = imageInfo.image;
         _scale = imageInfo.scale;
@@ -222,9 +227,18 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         final viewWidth = _boundaries.width / (_image.width * _scale * _ratio);
         final viewHeight =
             _boundaries.height / (_image.height * _scale * _ratio);
-        _view = Rect.fromLTWH((1.0 - viewWidth) / 2, (1.0 - viewHeight) / 2,
-            viewWidth, viewHeight);
-        _area = _calculateDefaultArea();
+        _area = _calculateDefaultArea(
+          viewWidth: viewWidth,
+          viewHeight: viewHeight,
+          imageWidth: _image.width,
+          imageHeight: _image.height,
+        );
+        _view = Rect.fromLTWH(
+          (1.0 - viewWidth) / 2 + _area.left,
+          (1.0 - viewHeight) / 2 + _area.top,
+          viewWidth,
+          viewHeight,
+        );
       });
     });
   }
@@ -287,46 +301,44 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     _startView = _view;
   }
 
-  Offset _calculateViewOffsetInBoundaries(double targetScale) {
-    var offset = Offset(0.0, 0.0);
+  Rect _getViewInBoundaries(double scale) {
+    double left = _view.left;
+    double top = _view.top;
 
-    final dx = _boundaries.width *
-        (targetScale - _scale) /
-        (_image.width * _scale * _ratio);
-    final dy = _boundaries.height *
-        (targetScale - _scale) /
-        (_image.height * _scale * _ratio);
-
-    if (_view.left + dx / 2 < 0.0) {
-      offset = offset.translate(-(_view.left + dx / 2), 0.0);
-    } else if (_view.right - dx / 2 > 1.0) {
-      offset = offset.translate(1.0 - _view.right - dx / 2, 0.0);
+    if (left < 0.0) {
+      left = 0.0;
+    } else if (left > 1.0 - _view.width * _area.width / scale) {
+      left = 1.0 - _view.width * _area.width / scale;
     }
 
-    if (_view.top + dy / 2 < 0.0) {
-      offset = offset.translate(0.0, -(_view.top + dy / 2));
-    } else if (_view.bottom - dy / 2 > 1.0) {
-      offset = offset.translate(0.0, 1.0 - _view.bottom - dy / 2);
+    if (top < 0.0) {
+      top = 0.0;
+    } else if (top > 1.0 - _view.height * _area.height / scale) {
+      top = 1.0 - _view.height * _area.height / scale;
     }
 
-    return offset;
+    return Offset(left, top) & _view.size;
+  }
+
+  double get _minimumScale {
+    final scaleX = _boundaries.width * _area.width / (_image.width * _ratio);
+    final scaleY = _boundaries.height * _area.height / (_image.height * _ratio);
+    return max(scaleX, scaleY);
   }
 
   void _handleScaleEnd(ScaleEndDetails details) {
     _deactivate();
 
-    final targetScale = _scale < 1.0 ? 1.0 : _scale;
-    _scaleTween = Tween(
+    final targetScale = max(min(_scale, 2.0), _minimumScale);
+    _scaleTween = Tween<double>(
       begin: _scale,
       end: targetScale,
     );
 
     _startView = _view;
-    _viewTween = Tween(
-      begin: Offset.zero,
-      end: _action == _CropAction.moving
-          ? _calculateViewOffsetInBoundaries(targetScale)
-          : Offset.zero,
+    _viewTween = RectTween(
+      begin: _view,
+      end: _getViewInBoundaries(targetScale),
     );
 
     _settleController.value = 0.0;
@@ -454,8 +466,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         _view = Rect.fromLTWH(
           _startView.left - dx / 2,
           _startView.top - dy / 2,
-          _startView.width + dx,
-          _startView.height + dy,
+          _startView.width,
+          _startView.height,
         );
       });
     }
@@ -501,19 +513,20 @@ class _CropPainter extends CustomPainter {
     canvas.save();
     canvas.translate(rect.left, rect.top);
 
+    final paint = Paint()..isAntiAlias = false;
+
     if (image != null) {
-      final paint = Paint()..isAntiAlias = false;
       final src = Rect.fromLTWH(
-        image.width * view.left,
-        image.height * view.top,
-        image.width * view.width,
-        image.height * view.height,
+        0.0,
+        0.0,
+        image.width.toDouble(),
+        image.height.toDouble(),
       );
       final dst = Rect.fromLTWH(
-        (rect.width - image.width * view.width * scale * ratio) / 2,
-        (rect.height - image.height * view.height * scale * ratio) / 2,
-        image.width * view.width * scale * ratio,
-        image.height * view.height * scale * ratio,
+        rect.width * area.left - image.width * view.left * scale * ratio,
+        rect.height * area.top - image.height * view.top * scale * ratio,
+        image.width * scale * ratio,
+        image.height * scale * ratio,
       );
 
       canvas.save();
@@ -522,14 +535,12 @@ class _CropPainter extends CustomPainter {
       canvas.restore();
     }
 
-    final paint = Paint()
-      ..isAntiAlias = false
-      ..color = Color.fromRGBO(
-          0x0,
-          0x0,
-          0x0,
-          _kCropOverlayActiveOpacity * active +
-              _kCropOverlayInactiveOpacity * (1.0 - active));
+    paint.color = Color.fromRGBO(
+        0x0,
+        0x0,
+        0x0,
+        _kCropOverlayActiveOpacity * active +
+            _kCropOverlayInactiveOpacity * (1.0 - active));
     final boundaries = Rect.fromLTWH(
       rect.width * area.left,
       rect.height * area.top,

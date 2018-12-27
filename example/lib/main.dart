@@ -64,7 +64,10 @@ class _MyAppState extends State<MyApp> {
               FlatButton(
                 child: Text(
                   'Crop Image',
-                  style: Theme.of(context).textTheme.button.copyWith(color: Colors.white),
+                  style: Theme.of(context)
+                      .textTheme
+                      .button
+                      .copyWith(color: Colors.white),
                 ),
                 onPressed: () => _cropImage(),
               ),
@@ -103,7 +106,8 @@ class _MyAppState extends State<MyApp> {
       return;
     }
 
-    final file = await ImageCrop.cropImage(file: _file, area: area, scale: scale);
+    final file =
+        await ImageCrop.cropImage(file: _file, area: area, scale: scale);
     debugPrint('$file');
   }
 }
