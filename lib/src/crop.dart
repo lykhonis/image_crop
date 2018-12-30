@@ -241,6 +241,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         );
       });
     });
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   _CropHandleSide _hitCropHandle(Offset localPoint) {
