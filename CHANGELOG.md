@@ -1,3 +1,11 @@
+## 0.1.3
+
+* New widget options: Maximum scale, always show grid
+* Adjusted scale to reflect original image size. If image scaled and fits in cropped area, scale is 1x
+* Calculate sample size against large side of image to match smaller to preferred width/height
+* Bug: ensure to display image on first frame
+* Optimization: do not resample if image is smaller than preferred width/height
+
 ## 0.1.2
 
 * Limit image to a crop area instead of view boundaries
