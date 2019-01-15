@@ -76,39 +76,11 @@ class ImageCrop {
       }
       return true;
     }());
-
-    final options = await getImageOptions(file: file);
-    if ((options.width <= preferredSize ?? preferredWidth) &&
-        (options.height <= preferredSize ?? preferredHeight)) {
-      return file;
-    }
-
-    final maximumSize = _calculateMaximumSize(
-      width: options.width,
-      height: options.height,
-      preferredWidth: preferredSize ?? preferredWidth,
-      preferredHeight: preferredSize ?? preferredHeight,
-    );
-
     final String path = await _channel.invokeMethod('sampleImage', {
       'path': file.path,
-      'maximumSize': maximumSize,
+      'maximumWidth': preferredSize ?? preferredWidth,
+      'maximumHeight': preferredSize ?? preferredHeight,
     });
-
     return File(path);
-  }
-
-  static int _calculateMaximumSize(
-      {int width, int height, int preferredWidth, int preferredHeight}) {
-    final widthFactor =
-        (preferredWidth.toDouble() / width.toDouble()).clamp(0.0, 1.0);
-    final heightFactor =
-        (preferredHeight.toDouble() / height.toDouble()).clamp(0.0, 1.0);
-
-    if (widthFactor > heightFactor) {
-      return (height * widthFactor).floor();
-    } else {
-      return (width * heightFactor).floor();
-    }
   }
 }
