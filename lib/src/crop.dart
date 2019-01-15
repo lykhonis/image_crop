@@ -16,12 +16,18 @@ enum _CropHandleSide { none, topLeft, topRight, bottomLeft, bottomRight }
 class Crop extends StatefulWidget {
   final ImageProvider image;
   final double aspectRatio;
+  final double maximumScale;
+  final bool alwaysShowGrid;
 
   const Crop({
     Key key,
     this.image,
     this.aspectRatio,
+    this.maximumScale: 2.0,
+    this.alwaysShowGrid: false,
   })  : assert(image != null),
+        assert(maximumScale != null),
+        assert(alwaysShowGrid != null),
         super(key: key);
 
   Crop.file(
@@ -29,7 +35,11 @@ class Crop extends StatefulWidget {
     Key key,
     double scale = 1.0,
     this.aspectRatio,
+    this.maximumScale: 2.0,
+    this.alwaysShowGrid: false,
   })  : image = FileImage(file, scale: scale),
+        assert(maximumScale != null),
+        assert(alwaysShowGrid != null),
         super(key: key);
 
   Crop.asset(
@@ -38,7 +48,11 @@ class Crop extends StatefulWidget {
     AssetBundle bundle,
     String package,
     this.aspectRatio,
+    this.maximumScale: 2.0,
+    this.alwaysShowGrid: false,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
+        assert(maximumScale != null),
+        assert(alwaysShowGrid != null),
         super(key: key);
 
   @override
@@ -68,7 +82,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   Tween<Rect> _viewTween;
   Tween<double> _scaleTween;
 
-  double get scale => _scale;
+  double get scale => _area.shortestSide / _scale;
 
   Rect get area {
     return _view.isEmpty
@@ -93,8 +107,10 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     _lastFocalPoint = Offset.zero;
     _action = _CropAction.none;
     _handle = _CropHandleSide.none;
-    _activeController = AnimationController(vsync: this)
-      ..addListener(() => setState(() {}));
+    _activeController = AnimationController(
+      vsync: this,
+      value: widget.alwaysShowGrid ? 1.0 : 0.0,
+    )..addListener(() => setState(() {}));
     _settleController = AnimationController(vsync: this)
       ..addListener(_settleAnimationChanged);
   }
@@ -126,12 +142,13 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         imageHeight: _image?.height,
       );
     }
-  }
-
-  @override
-  void reassemble() {
-    super.reassemble();
-    _getImage(force: true);
+    if (widget.alwaysShowGrid != oldWidget.alwaysShowGrid) {
+      if (widget.alwaysShowGrid) {
+        _activate();
+      } else {
+        _deactivate();
+      }
+    }
   }
 
   void _getImage({bool force: false}) {
@@ -176,11 +193,13 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   }
 
   void _deactivate() {
-    _activeController.animateTo(
-      0.0,
-      curve: Curves.fastOutSlowIn,
-      duration: const Duration(milliseconds: 250),
-    );
+    if (!widget.alwaysShowGrid) {
+      _activeController.animateTo(
+        0.0,
+        curve: Curves.fastOutSlowIn,
+        duration: const Duration(milliseconds: 250),
+      );
+    }
   }
 
   Size get _boundaries =>
@@ -321,16 +340,18 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     return Offset(left, top) & _view.size;
   }
 
+  double get _maximumScale => widget.maximumScale;
+
   double get _minimumScale {
     final scaleX = _boundaries.width * _area.width / (_image.width * _ratio);
     final scaleY = _boundaries.height * _area.height / (_image.height * _ratio);
-    return max(scaleX, scaleY);
+    return min(_maximumScale, max(scaleX, scaleY));
   }
 
   void _handleScaleEnd(ScaleEndDetails details) {
     _deactivate();
 
-    final targetScale = max(min(_scale, 2.0), _minimumScale);
+    final targetScale = _scale.clamp(_minimumScale, _maximumScale);
     _scaleTween = Tween<double>(
       begin: _scale,
       end: targetScale,
