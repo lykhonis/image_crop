@@ -28,6 +28,16 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final cropKey = GlobalKey<CropState>();
   File _file;
+  File _sample;
+  File _lastCropped;
+
+  @override
+  void dispose() {
+    super.dispose();
+    _file?.delete();
+    _sample?.delete();
+    _lastCropped?.delete();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +47,7 @@ class _MyAppState extends State<MyApp> {
         child: Container(
           color: Colors.black,
           padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 20.0),
-          child: _file == null ? _buildOpeningImage() : _buildCroppingImage(),
+          child: _sample == null ? _buildOpeningImage() : _buildCroppingImage(),
         ),
       ),
     );
@@ -51,7 +61,7 @@ class _MyAppState extends State<MyApp> {
     return Column(
       children: <Widget>[
         Expanded(
-          child: Crop.file(_file, key: cropKey),
+          child: Crop.file(_sample, key: cropKey),
         ),
         Container(
           padding: const EdgeInsets.only(top: 20.0),
@@ -86,10 +96,17 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _openImage() async {
     final file = await ImagePicker.pickImage(source: ImageSource.gallery);
-    final sample = await ImageCrop.sampleImage(file: file, preferredSize: 2000);
+    final sample = await ImageCrop.sampleImage(
+      file: file,
+      preferredSize: context.size.longestSide.ceil(),
+    );
+
+_sample?.delete();
+    _file?.delete();
 
     setState(() {
-      _file = sample;
+      _sample = sample;
+      _file = file;
     });
   }
 
@@ -101,12 +118,23 @@ class _MyAppState extends State<MyApp> {
       return;
     }
 
-    final file = await ImageCrop.cropImage(
+    // scale up to use maximum possible number of pixels
+    // this will sample image in higher resolution to make cropped image larger
+    final sample = await ImageCrop.sampleImage(
       file: _file,
-      area: area,
-      scale: scale,
+      preferredSize: (2000 / scale).round(),
     );
 
+    final file = await ImageCrop.cropImage(
+      file: sample,
+      area: area,
+    );
+
+    sample.delete();
+
+    _lastCropped?.delete();
+    _lastCropped = file;
+  
     debugPrint('$file');
   }
 }
