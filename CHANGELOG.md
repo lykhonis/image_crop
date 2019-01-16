@@ -1,3 +1,9 @@
+## 0.2.0
+
+* Fit sampled images to specified maximum width/height on both iOS and Android
+* Preserve exif information on Android when crop/sample image
+* Updated example to illustrate higher quality cropped image production
+
 ## 0.1.3
 
 * New widget options: Maximum scale, always show grid
