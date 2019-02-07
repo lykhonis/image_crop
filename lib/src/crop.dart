@@ -453,7 +453,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       }
     }
 
-    if (_action == _CropAction.cropping && widget.canResizeGrid ) {
+    if (_action == _CropAction.cropping && widget.canResizeGrid) {
       final delta = details.focalPoint - _lastFocalPoint;
       _lastFocalPoint = details.focalPoint;
 
