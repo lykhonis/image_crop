@@ -449,11 +449,14 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
             ? _CropAction.moving
             : _CropAction.scaling;
       } else {
-        _action = _CropAction.cropping;
+        if (widget.canResizeGrid) {
+          _action = _CropAction.cropping;
+        }
       }
     }
 
-    if (_action == _CropAction.cropping && widget.canResizeGrid ) {
+
+    if (_action == _CropAction.cropping) {
       final delta = details.focalPoint - _lastFocalPoint;
       _lastFocalPoint = details.focalPoint;
 
@@ -589,8 +592,11 @@ class _CropPainter extends CustomPainter {
 
     if (!boundaries.isEmpty) {
       _drawGrid(canvas, boundaries);
-      if(this.canResizeGrid)
+
+      if (this.canResizeGrid) {
         _drawHandles(canvas, boundaries);
+      }
+
     }
 
     canvas.restore();
