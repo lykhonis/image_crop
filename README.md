@@ -1,4 +1,3 @@
-[![Coverage Status -](https://coveralls.io/repos/github/flutter/flutter/badge.svg?branch=master)](https://coveralls.io/github/flutter/flutter?branch=master)
 
 # Image Cropping plugin for Flutter
 
