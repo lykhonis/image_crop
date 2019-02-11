@@ -27,8 +27,12 @@
         [self cropImage:path area:area scale:scale result:result];
     } else if ([@"sampleImage" isEqualToString:call.method]) {
         NSString* path = (NSString*)call.arguments[@"path"];
-        NSNumber* maximumSize = (NSNumber*)call.arguments[@"maximumSize"];
-        [self sampleImage:path maximumSize:maximumSize result:result];
+        NSNumber* maximumWidth = (NSNumber*)call.arguments[@"maximumWidth"];
+        NSNumber* maximumHeight = (NSNumber*)call.arguments[@"maximumHeight"];
+        [self sampleImage:path
+             maximumWidth:maximumWidth
+            maximumHeight:maximumHeight
+                   result:result];
     } else if ([@"getImageOptions" isEqualToString:call.method]) {
         NSString* path = (NSString*)call.arguments[@"path"];
         [self getImageOptions:path result:result];
@@ -125,7 +129,8 @@
 }
 
 - (void)sampleImage:(NSString*)path
-        maximumSize:(NSNumber*)maximumSize
+       maximumWidth:(NSNumber*)maximumWidth
+      maximumHeight:(NSNumber*)maximumHeight
              result:(FlutterResult)result {
     [self execute:^{
         NSURL* url = [NSURL fileURLWithPath:path];
@@ -137,7 +142,26 @@
                                        details:nil]);
             return;
         }
-        
+
+        CFDictionaryRef properties = CGImageSourceCopyPropertiesAtIndex(image, 0, nil);
+
+        if (properties == NULL) {
+            CFRelease(image);
+            result([FlutterError errorWithCode:@"INVALID"
+                                       message:@"Image source properties cannot be copied"
+                                       details:nil]);
+            return;
+        }
+
+        NSNumber* width = (NSNumber*) CFDictionaryGetValue(properties, kCGImagePropertyPixelWidth);
+        NSNumber* height = (NSNumber*) CFDictionaryGetValue(properties, kCGImagePropertyPixelHeight);
+        CFRelease(properties);
+
+        double widthRatio = MIN(1.0, maximumWidth.doubleValue / width.doubleValue);
+        double heightRatio = MIN(1.0, maximumHeight.doubleValue / height.doubleValue);
+        double ratio = MAX(widthRatio, heightRatio);
+        NSNumber* maximumSize = @(MAX(width.doubleValue * ratio, height.doubleValue * ratio));
+
         CFDictionaryRef options = (__bridge CFDictionaryRef) @{
                                                                (id) kCGImageSourceCreateThumbnailWithTransform: @YES,
                                                                (id) kCGImageSourceCreateThumbnailFromImageAlways : @YES,
@@ -145,14 +169,14 @@
                                                                };
         CGImageRef sampleImage = CGImageSourceCreateThumbnailAtIndex(image, 0, options);
         CFRelease(image);
-        
+
         if (sampleImage == NULL) {
             result([FlutterError errorWithCode:@"INVALID"
                                        message:@"Image sample cannot be created"
                                        details:nil]);
             return;
         }
-        
+
         NSURL* sampleUrl = [self createTemporaryImageUrl];
         bool saved = [self saveImage:sampleImage url:sampleUrl];
         CFRelease(sampleImage);

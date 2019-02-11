@@ -9,17 +9,21 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Build;
+import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import androidx.exifinterface.media.ExifInterface;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -49,6 +53,7 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         registrar.addRequestPermissionsResultListener(instance);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     public void onMethodCall(MethodCall call, Result result) {
         if ("cropImage".equals(call.method)) {
@@ -62,8 +67,9 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
             cropImage(path, area, (float) scale, result);
         } else if ("sampleImage".equals(call.method)) {
             String path = call.argument("path");
-            int maximumSize = call.argument("maximumSize");
-            sampleImage(path, maximumSize, result);
+            int maximumWidth = call.argument("maximumWidth");
+            int maximumHeight = call.argument("maximumHeight");
+            sampleImage(path, maximumWidth, maximumHeight, result);
         } else if ("getImageOptions".equals(call.method)) {
             String path = call.argument("path");
             getImageOptions(path, result);
@@ -110,6 +116,7 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
                 try {
                     File dstFile = createTemporaryImageFile();
                     compressBitmap(dstBitmap, dstFile);
+                    copyExif(srcFile, dstFile);
                     result.success(dstFile.getAbsolutePath());
                 } catch (IOException e) {
                     result.error("INVALID", "Image could not be saved", e);
@@ -122,7 +129,7 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         });
     }
 
-    private void sampleImage(final String path, final int maximumSize, final Result result) {
+    private void sampleImage(final String path, final int maximumWidth, final int maximumHeight, final Result result) {
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -137,13 +144,7 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
 
                 BitmapFactory.decodeFile(path, options);
 
-                int inSampleSize = calculateInSampleSize(options, maximumSize);
-                if (inSampleSize == 1) {
-                    result.success(path);
-                    return;
-                }
-
-                options.inSampleSize = inSampleSize;
+                options.inSampleSize = calculateInSampleSize(options, maximumWidth, maximumHeight);
                 options.inJustDecodeBounds = false;
 
                 Bitmap bitmap = BitmapFactory.decodeFile(path, options);
@@ -152,9 +153,17 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
                     return;
                 }
 
+                if (bitmap.getWidth() > maximumWidth && bitmap.getHeight() > maximumHeight) {
+                    float ratio = Math.max(maximumWidth / (float) bitmap.getWidth(), maximumHeight / (float) bitmap.getHeight());
+                    Bitmap sample = bitmap;
+                    bitmap = Bitmap.createScaledBitmap(sample, Math.round(bitmap.getWidth() * ratio), Math.round(bitmap.getHeight() * ratio), true);
+                    sample.recycle();
+                }
+
                 try {
                     File dstFile = createTemporaryImageFile();
                     compressBitmap(bitmap, dstFile);
+                    copyExif(srcFile, dstFile);
                     result.success(dstFile.getAbsolutePath());
                 } catch (IOException e) {
                     result.error("INVALID", "Image could not be saved", e);
@@ -181,16 +190,16 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         }
     }
 
-    private int calculateInSampleSize(BitmapFactory.Options options, int maximumSize) {
+    private int calculateInSampleSize(BitmapFactory.Options options, int maximumWidth, int maximumHeight) {
         int height = options.outHeight;
         int width = options.outWidth;
         int inSampleSize = 1;
 
-        if (height > maximumSize || width > maximumSize) {
+        if (height > maximumHeight || width > maximumWidth) {
             int halfHeight = height / 2;
             int halfWidth = width / 2;
 
-            while ((halfHeight / inSampleSize) >= maximumSize && (halfWidth / inSampleSize) >= maximumSize) {
+            while ((halfHeight / inSampleSize) >= maximumHeight && (halfWidth / inSampleSize) >= maximumWidth) {
                 inSampleSize *= 2;
             }
         }
@@ -260,5 +269,45 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         File directory = activity.getCacheDir();
         String name = "image_crop_" + UUID.randomUUID().toString();
         return File.createTempFile(name, ".jpg", directory);
+    }
+
+    private void copyExif(File source, File destination) {
+        try {
+            ExifInterface sourceExif = new ExifInterface(source.getAbsolutePath());
+            ExifInterface destinationExif = new ExifInterface(destination.getAbsolutePath());
+
+            List<String> tags =
+                    Arrays.asList(
+                            ExifInterface.TAG_F_NUMBER,
+                            ExifInterface.TAG_EXPOSURE_TIME,
+                            ExifInterface.TAG_PHOTOGRAPHIC_SENSITIVITY,
+                            ExifInterface.TAG_GPS_ALTITUDE,
+                            ExifInterface.TAG_GPS_ALTITUDE_REF,
+                            ExifInterface.TAG_FOCAL_LENGTH,
+                            ExifInterface.TAG_GPS_DATESTAMP,
+                            ExifInterface.TAG_WHITE_BALANCE,
+                            ExifInterface.TAG_GPS_PROCESSING_METHOD,
+                            ExifInterface.TAG_GPS_TIMESTAMP,
+                            ExifInterface.TAG_DATETIME,
+                            ExifInterface.TAG_FLASH,
+                            ExifInterface.TAG_GPS_LATITUDE,
+                            ExifInterface.TAG_GPS_LATITUDE_REF,
+                            ExifInterface.TAG_GPS_LONGITUDE,
+                            ExifInterface.TAG_GPS_LONGITUDE_REF,
+                            ExifInterface.TAG_MAKE,
+                            ExifInterface.TAG_MODEL,
+                            ExifInterface.TAG_ORIENTATION);
+
+            for (String tag : tags) {
+                String attribute = sourceExif.getAttribute(tag);
+                if (attribute != null) {
+                    destinationExif.setAttribute(tag, attribute);
+                }
+            }
+
+            destinationExif.saveAttributes();
+        } catch (IOException e) {
+            Log.e("ImageCrop", "Failed to preserve Exif information", e);
+        }
     }
 }

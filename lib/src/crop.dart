@@ -18,6 +18,7 @@ class Crop extends StatefulWidget {
   final double aspectRatio;
   final double maximumScale;
   final bool alwaysShowGrid;
+  final bool canResizeGrid;
 
   const Crop({
     Key key,
@@ -25,6 +26,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
+    this.canResizeGrid: true
   })  : assert(image != null),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -37,6 +39,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
+    this.canResizeGrid: true
   })  : image = FileImage(file, scale: scale),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -50,6 +53,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
+    this.canResizeGrid: true
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -178,6 +182,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
             area: _area,
             scale: _scale,
             active: _activeController.value,
+            canResizeGrid: widget.canResizeGrid
           ),
         ),
       ),
@@ -444,9 +449,12 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
             ? _CropAction.moving
             : _CropAction.scaling;
       } else {
-        _action = _CropAction.cropping;
+        if (widget.canResizeGrid) {
+          _action = _CropAction.cropping;
+        }
       }
     }
+
 
     if (_action == _CropAction.cropping) {
       final delta = details.focalPoint - _lastFocalPoint;
@@ -503,6 +511,7 @@ class _CropPainter extends CustomPainter {
   final Rect area;
   final double scale;
   final double active;
+  final bool canResizeGrid;
 
   _CropPainter({
     this.image,
@@ -511,6 +520,7 @@ class _CropPainter extends CustomPainter {
     this.area,
     this.scale,
     this.active,
+    this.canResizeGrid
   });
 
   @override
@@ -582,7 +592,11 @@ class _CropPainter extends CustomPainter {
 
     if (!boundaries.isEmpty) {
       _drawGrid(canvas, boundaries);
-      _drawHandles(canvas, boundaries);
+
+      if (this.canResizeGrid) {
+        _drawHandles(canvas, boundaries);
+      }
+
     }
 
     canvas.restore();

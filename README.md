@@ -57,7 +57,7 @@ Read image options, such as: width and height. This is efficent implementation t
 final options = await getImageOptions(file: file);
 debugPrint('image width: ${options.width}, height: ${options.height}');
 ```
-If image is large to be loaded into the memory, there is a sampling function that relies on a native platform to proportionally scale down the image befor loading it to the memory. e.g. resample image to get down to `1024x4096` dimension as close as possible. If it is a square `preferredSize` can be used to specify both width and height.
+If image is large to be loaded into the memory, there is a sampling function that relies on a native platform to proportionally scale down the image befor loading it to the memory. e.g. resample image to get down to `1024x4096` dimension as close as possible. If it is a square `preferredSize` can be used to specify both width and height. Prefer to leverage this functionality when displaying images in UI.
 ```dart
 final sampleFile = await ImageCrop.sampleImage(
     file: originalFile,
@@ -65,11 +65,16 @@ final sampleFile = await ImageCrop.sampleImage(
     preferredHeight: 4096,
 );
 ```
-Once `Crop` widget is ready, there is a native support of croping and scaling an image.
+Once `Crop` widget is ready, there is a native support of croping and scaling an image. In order to produce higher quality cropped image, rely on sampling image with preferred maximum width and height. Scale up a resolution of the sampled image. When cropped, the image is in higher resolution. Example is illustrated below:
 ```dart
-final croppedFile = await ImageCrop.cropImage(
+final sampledFile = await ImageCrop.sampleImage(
     file: originalFile,
-    scale: crop.scale,
+    preferredWidth: (1024 / crop.scale).round(),
+    preferredHeight: (4096 / crop.scale).round(),
+);
+
+final croppedFile = await ImageCrop.cropImage(
+    file: sampledFile,
     area: crop.area,
 );
 ```
