@@ -19,6 +19,7 @@ class Crop extends StatefulWidget {
   final double maximumScale;
   final bool alwaysShowGrid;
   final ImageErrorListener onImageError;
+  final bool circleMode;
 
   const Crop({
     Key key,
@@ -27,6 +28,7 @@ class Crop extends StatefulWidget {
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
     this.onImageError,
+    this.circleMode: false,
   })  : assert(image != null),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -40,6 +42,7 @@ class Crop extends StatefulWidget {
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
     this.onImageError,
+    this.circleMode: false,
   })  : image = FileImage(file, scale: scale),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -54,6 +57,7 @@ class Crop extends StatefulWidget {
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
     this.onImageError,
+    this.circleMode: false,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -184,6 +188,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
             area: _area,
             scale: _scale,
             active: _activeController.value,
+            circleMode: widget.circleMode,
           ),
         ),
       ),
@@ -509,6 +514,7 @@ class _CropPainter extends CustomPainter {
   final Rect area;
   final double scale;
   final double active;
+  final bool circleMode;
 
   _CropPainter({
     this.image,
@@ -517,6 +523,7 @@ class _CropPainter extends CustomPainter {
     this.area,
     this.scale,
     this.active,
+    this.circleMode,
   });
 
   @override
@@ -575,20 +582,31 @@ class _CropPainter extends CustomPainter {
       rect.width * area.width,
       rect.height * area.height,
     );
-    canvas.drawRect(Rect.fromLTRB(0.0, 0.0, rect.width, boundaries.top), paint);
-    canvas.drawRect(
-        Rect.fromLTRB(0.0, boundaries.bottom, rect.width, rect.height), paint);
-    canvas.drawRect(
-        Rect.fromLTRB(0.0, boundaries.top, boundaries.left, boundaries.bottom),
-        paint);
-    canvas.drawRect(
-        Rect.fromLTRB(
-            boundaries.right, boundaries.top, rect.width, boundaries.bottom),
-        paint);
+    if (circleMode == true) {
+      canvas.drawDRRect(
+          RRect.fromLTRBR(0.0, 0.0, rect.width, rect.height, Radius.zero),
+          RRect.fromLTRBR(boundaries.left, boundaries.top, boundaries.right,
+              boundaries.bottom, Radius.circular(rect.width)),
+          paint);
+    } else {
+      canvas.drawRect(
+          Rect.fromLTRB(0.0, 0.0, rect.width, boundaries.top), paint);
+      canvas.drawRect(
+          Rect.fromLTRB(0.0, boundaries.bottom, rect.width, rect.height),
+          paint);
+      canvas.drawRect(
+          Rect.fromLTRB(
+              0.0, boundaries.top, boundaries.left, boundaries.bottom),
+          paint);
+      canvas.drawRect(
+          Rect.fromLTRB(
+              boundaries.right, boundaries.top, rect.width, boundaries.bottom),
+          paint);
 
-    if (!boundaries.isEmpty) {
-      _drawGrid(canvas, boundaries);
-      _drawHandles(canvas, boundaries);
+      if (!boundaries.isEmpty) {
+        _drawGrid(canvas, boundaries);
+        _drawHandles(canvas, boundaries);
+      }
     }
 
     canvas.restore();
