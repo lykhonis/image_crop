@@ -1,3 +1,8 @@
+## 0.2.1
+
+* Read exif information to provide proper width/height according to the orientation
+* Rotate image prior cropping as needed per exif information
+
 ## 0.2.0
 
 * Fit sampled images to specified maximum width/height on both iOS and Android
