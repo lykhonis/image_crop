@@ -101,7 +101,7 @@ class _MyAppState extends State<MyApp> {
       preferredSize: context.size.longestSide.ceil(),
     );
 
-_sample?.delete();
+    _sample?.delete();
     _file?.delete();
 
     setState(() {
@@ -134,7 +134,7 @@ _sample?.delete();
 
     _lastCropped?.delete();
     _lastCropped = file;
-  
+
     debugPrint('$file');
   }
 }

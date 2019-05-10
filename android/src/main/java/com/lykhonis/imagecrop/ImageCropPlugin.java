@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -96,8 +97,20 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
                     return;
                 }
 
-                int width = (int) (srcBitmap.getWidth() * area.width() * scale);
-                int height = (int) (srcBitmap.getHeight() * area.height() * scale);
+                ImageOptions options = decodeImageOptions(path);
+                if (options.isFlippedDimensions()) {
+                    Matrix transformations = new Matrix();
+                    transformations.postRotate(options.getDegrees());
+                    Bitmap oldBitmap = srcBitmap;
+                    srcBitmap = Bitmap.createBitmap(oldBitmap,
+                                                    0, 0,
+                                                    oldBitmap.getWidth(), oldBitmap.getHeight(),
+                                                    transformations, true);
+                    oldBitmap.recycle();
+                }
+
+                int width = (int) (options.getWidth() * area.width() * scale);
+                int height = (int) (options.getHeight() * area.height() * scale);
 
                 Bitmap dstBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(dstBitmap);
@@ -107,16 +120,27 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
                 paint.setFilterBitmap(true);
                 paint.setDither(true);
 
-                Rect srcRect = new Rect((int) (srcBitmap.getWidth() * area.left), (int) (srcBitmap.getHeight() * area.top),
-                                        (int) (srcBitmap.getWidth() * area.right), (int) (srcBitmap.getHeight() * area.bottom));
+                Rect srcRect = new Rect((int) (srcBitmap.getWidth() * area.left),
+                                        (int) (srcBitmap.getHeight() * area.top),
+                                        (int) (srcBitmap.getWidth() * area.right),
+                                        (int) (srcBitmap.getHeight() * area.bottom));
                 Rect dstRect = new Rect(0, 0, width, height);
-
                 canvas.drawBitmap(srcBitmap, srcRect, dstRect, paint);
+
+                // TODO: Research a way to optimize rendering via matrix to reduce memory print.
+//                Matrix transformations = new Matrix();
+//                transformations.mapRect(new RectF(0, 0,
+//                                                  options.getWidth(), options.getHeight()));
+//                transformations.postTranslate(-options.getWidth() / 2f * area.left,
+//                                              -options.getHeight() / 2f * area.top);
+//                transformations.postRotate(options.getDegrees(),
+//                                           options.getWidth() / 2f * area.width(),
+//                                           options.getHeight() / 2f * area.height());
+//                canvas.drawBitmap(srcBitmap, transformations, paint);
 
                 try {
                     File dstFile = createTemporaryImageFile();
                     compressBitmap(dstBitmap, dstFile);
-                    copyExif(srcFile, dstFile);
                     result.success(dstFile.getAbsolutePath());
                 } catch (IOException e) {
                     result.error("INVALID", "Image could not be saved", e);
@@ -139,22 +163,19 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
                     return;
                 }
 
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inJustDecodeBounds = true;
+                ImageOptions options = decodeImageOptions(path);
+                BitmapFactory.Options bitmapOptions = new BitmapFactory.Options();
+                bitmapOptions.inSampleSize = calculateInSampleSize(options.getWidth(), options.getHeight(),
+                                                                   maximumWidth, maximumHeight);
 
-                BitmapFactory.decodeFile(path, options);
-
-                options.inSampleSize = calculateInSampleSize(options, maximumWidth, maximumHeight);
-                options.inJustDecodeBounds = false;
-
-                Bitmap bitmap = BitmapFactory.decodeFile(path, options);
+                Bitmap bitmap = BitmapFactory.decodeFile(path, bitmapOptions);
                 if (bitmap == null) {
                     result.error("INVALID", "Image source cannot be decoded", null);
                     return;
                 }
 
-                if (bitmap.getWidth() > maximumWidth && bitmap.getHeight() > maximumHeight) {
-                    float ratio = Math.max(maximumWidth / (float) bitmap.getWidth(), maximumHeight / (float) bitmap.getHeight());
+                if (options.getWidth() > maximumWidth && options.getHeight() > maximumHeight) {
+                    float ratio = Math.max(maximumWidth / (float) options.getWidth(), maximumHeight / (float) options.getHeight());
                     Bitmap sample = bitmap;
                     bitmap = Bitmap.createScaledBitmap(sample, Math.round(bitmap.getWidth() * ratio), Math.round(bitmap.getHeight() * ratio), true);
                     sample.recycle();
@@ -190,9 +211,7 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         }
     }
 
-    private int calculateInSampleSize(BitmapFactory.Options options, int maximumWidth, int maximumHeight) {
-        int height = options.outHeight;
-        int width = options.outWidth;
+    private int calculateInSampleSize(int width, int height, int maximumWidth, int maximumHeight) {
         int inSampleSize = 1;
 
         if (height > maximumHeight || width > maximumWidth) {
@@ -217,13 +236,10 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
                     return;
                 }
 
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inJustDecodeBounds = true;
-                BitmapFactory.decodeFile(path, options);
-
+                ImageOptions options = decodeImageOptions(path);
                 Map<String, Object> properties = new HashMap<>();
-                properties.put("width", options.outWidth);
-                properties.put("height", options.outHeight);
+                properties.put("width", options.getWidth());
+                properties.put("height", options.getHeight());
 
                 result.success(properties);
             }
@@ -271,6 +287,20 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         return File.createTempFile(name, ".jpg", directory);
     }
 
+    private ImageOptions decodeImageOptions(String path) {
+        int rotationDegrees = 0;
+        try {
+            ExifInterface exif = new ExifInterface(path);
+            rotationDegrees = exif.getRotationDegrees();
+        } catch (IOException e) {
+            Log.e("ImageCrop", "Failed to read a file " + path, e);
+        }
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(path, options);
+        return new ImageOptions(options.outWidth, options.outHeight, rotationDegrees);
+    }
+
     private void copyExif(File source, File destination) {
         try {
             ExifInterface sourceExif = new ExifInterface(source.getAbsolutePath());
@@ -308,6 +338,38 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
             destinationExif.saveAttributes();
         } catch (IOException e) {
             Log.e("ImageCrop", "Failed to preserve Exif information", e);
+        }
+    }
+
+    private static final class ImageOptions {
+        private int width;
+        private int height;
+        private int degrees;
+
+        public ImageOptions(int width, int height, int degrees) {
+            this.width = width;
+            this.height = height;
+            this.degrees = degrees;
+        }
+
+        public int getHeight() {
+            return isFlippedDimensions() ? width : height;
+        }
+
+        public int getWidth() {
+            return isFlippedDimensions() ? height : width;
+        }
+
+        public int getDegrees() {
+            return degrees;
+        }
+
+        public boolean isFlippedDimensions() {
+            return degrees == 90 || degrees == 270;
+        }
+
+        public boolean isRotated() {
+            return degrees != 0;
         }
     }
 }
