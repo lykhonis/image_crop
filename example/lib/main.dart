@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_crop/image_crop.dart';
 
+import 'plain_crop_painter.dart';
+
 // Hidden import to let `flutter packages pub publish --dry-run` complete without errors
 // FIXME: uncomment to try out example code
 // import 'package:image_picker/image_picker.dart';
@@ -30,6 +32,8 @@ class _MyAppState extends State<MyApp> {
   File _file;
   File _sample;
   File _lastCropped;
+  bool _fixedCrop = false;
+  bool _plainCrop = false;
 
   @override
   void dispose() {
@@ -58,10 +62,71 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildCroppingImage() {
+    CropPainterBuilder cropPainterBuilder;
+
+    if (_plainCrop) {
+      cropPainterBuilder = (state) {
+        return PlainCropPainter(state: state);
+      };
+    }
+
     return Column(
       children: <Widget>[
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Container(
+              width: 140,
+              child: FlatButton(
+                child: Text(
+                  _fixedCrop ? 'try adjustable' : 'try fixed',
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .button
+                      .copyWith(color: _plainCrop ? Colors.grey : Colors.white),
+                ),
+                onPressed: () {
+                  if(_plainCrop) return;
+                  setState(() {
+                    _fixedCrop = !_fixedCrop;
+                    cropKey.currentState.adjustable = !_fixedCrop;
+                  });
+                },
+              ),
+            ),
+            Container(
+              width: 140,
+              child: FlatButton(
+                child: Text(
+                  _plainCrop ? 'try default crop' : 'try plain crop',
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .button
+                      .copyWith(color: Colors.white),
+                ),
+                onPressed: () {
+                  setState(() {
+                    _plainCrop = !_plainCrop;
+                    if(_plainCrop){
+                      cropKey.currentState.adjustable = false;
+                    }else{
+                      cropKey.currentState.adjustable = !_fixedCrop;
+                    }
+                  });
+                },
+              ),
+            ),
+          ],
+        ),
         Expanded(
-          child: Crop.file(_sample, key: cropKey),
+          child: Crop.file(
+            _sample,
+            key: cropKey,
+            aspectRatio: 1.0 / 1.0,
+            cropPainterBuilder: cropPainterBuilder,
+          ),
         ),
         Container(
           padding: const EdgeInsets.only(top: 20.0),
@@ -72,7 +137,10 @@ class _MyAppState extends State<MyApp> {
               FlatButton(
                 child: Text(
                   'Crop Image',
-                  style: Theme.of(context).textTheme.button.copyWith(color: Colors.white),
+                  style: Theme.of(context)
+                      .textTheme
+                      .button
+                      .copyWith(color: Colors.white),
                 ),
                 onPressed: () => _cropImage(),
               ),

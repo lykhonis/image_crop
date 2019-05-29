@@ -18,6 +18,7 @@ class Crop extends StatefulWidget {
   final double aspectRatio;
   final double maximumScale;
   final bool alwaysShowGrid;
+  final CropPainterBuilder cropPainterBuilder;
 
   const Crop({
     Key key,
@@ -25,6 +26,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
+    this.cropPainterBuilder,
   })  : assert(image != null),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -37,6 +39,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
+    this.cropPainterBuilder,
   })  : image = FileImage(file, scale: scale),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -50,6 +53,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
+    this.cropPainterBuilder,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -63,6 +67,7 @@ class Crop extends StatefulWidget {
     return state;
   }
 }
+
 
 class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   final _surfaceKey = GlobalKey();
@@ -82,7 +87,18 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   Tween<Rect> _viewTween;
   Tween<double> _scaleTween;
 
+  bool adjustable = true;
   double get scale => _area.shortestSide / _scale;
+
+  CropPaintState get paintState => CropPaintState(
+    image: _image,
+    view: _view,
+    ratio: _ratio,
+    area: _area,
+    scale: _scale,
+    active: _activeController.value,
+    isDrawCropHandle: adjustable,
+  );
 
   Rect get area {
     return _view.isEmpty
@@ -135,7 +151,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     if (widget.image != oldWidget.image) {
       _getImage();
     } else if (widget.aspectRatio != oldWidget.aspectRatio) {
-      _area = _calculateDefaultArea(
+      _area = calculateDefaultArea(
         viewWidth: _view.width,
         viewHeight: _view.height,
         imageWidth: _image?.width,
@@ -162,6 +178,9 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
 
   @override
   Widget build(BuildContext context) {
+    final cropPainter = (widget.cropPainterBuilder == null
+        ? _CropPainter(state: this.paintState)
+        : widget.cropPainterBuilder(this.paintState));
     return ConstrainedBox(
       constraints: const BoxConstraints.expand(),
       child: GestureDetector(
@@ -171,14 +190,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         onScaleUpdate: _isEnabled ? _handleScaleUpdate : null,
         onScaleEnd: _isEnabled ? _handleScaleEnd : null,
         child: CustomPaint(
-          painter: _CropPainter(
-            image: _image,
-            ratio: _ratio,
-            view: _view,
-            area: _area,
-            scale: _scale,
-            active: _activeController.value,
-          ),
+          painter: cropPainter,
         ),
       ),
     );
@@ -203,8 +215,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   }
 
   Size get _boundaries =>
-      _surfaceKey.currentContext.size -
-      Offset(_kCropHandleSize, _kCropHandleSize);
+      _surfaceKey.currentContext.size - Offset(_kCropHandleSize, _kCropHandleSize);
 
   Offset _getLocalPoint(Offset point) {
     final RenderBox box = _surfaceKey.currentContext.findRenderObject();
@@ -218,7 +229,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     });
   }
 
-  Rect _calculateDefaultArea({
+  Rect calculateDefaultArea({
     int imageWidth,
     int imageHeight,
     double viewWidth,
@@ -246,7 +257,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         final viewWidth = _boundaries.width / (_image.width * _scale * _ratio);
         final viewHeight =
             _boundaries.height / (_image.height * _scale * _ratio);
-        _area = _calculateDefaultArea(
+        _area = calculateDefaultArea(
           viewWidth: viewWidth,
           viewHeight: viewHeight,
           imageWidth: _image.width,
@@ -448,7 +459,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       }
     }
 
-    if (_action == _CropAction.cropping) {
+    if (_action == _CropAction.cropping && adjustable) {
       final delta = details.focalPoint - _lastFocalPoint;
       _lastFocalPoint = details.focalPoint;
 
@@ -496,32 +507,34 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   }
 }
 
-class _CropPainter extends CustomPainter {
-  final ui.Image image;
-  final Rect view;
-  final double ratio;
-  final Rect area;
-  final double scale;
-  final double active;
 
+
+class CropPaintState {
+  ui.Image image;
+  Rect view;
+  double ratio;
+  Rect area;
+  double scale;
+  double active;
+  bool isDrawCropHandle;
+
+  CropPaintState({this.image, this.view, this.ratio, this.area, this.scale,
+    this.active, this.isDrawCropHandle});
+
+  bool operator ==(dynamic other) => (other is CropPaintState &&
+      other.image == image &&
+      other.view == view &&
+      other.ratio == ratio &&
+      other.area == area &&
+      other.active == active &&
+      other.scale == scale &&
+      other.isDrawCropHandle == isDrawCropHandle);
+}
+
+class _CropPainter extends AbstractCropPainter {
   _CropPainter({
-    this.image,
-    this.view,
-    this.ratio,
-    this.area,
-    this.scale,
-    this.active,
-  });
-
-  @override
-  bool shouldRepaint(_CropPainter oldDelegate) {
-    return oldDelegate.image != image ||
-        oldDelegate.view != view ||
-        oldDelegate.ratio != ratio ||
-        oldDelegate.area != area ||
-        oldDelegate.active != active ||
-        oldDelegate.scale != scale;
-  }
+    CropPaintState state,
+  }) : super(state: state);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -537,23 +550,23 @@ class _CropPainter extends CustomPainter {
 
     final paint = Paint()..isAntiAlias = false;
 
-    if (image != null) {
+    if (state.image != null) {
       final src = Rect.fromLTWH(
         0.0,
         0.0,
-        image.width.toDouble(),
-        image.height.toDouble(),
+        state.image.width.toDouble(),
+        state.image.height.toDouble(),
       );
       final dst = Rect.fromLTWH(
-        rect.width * area.left - image.width * view.left * scale * ratio,
-        rect.height * area.top - image.height * view.top * scale * ratio,
-        image.width * scale * ratio,
-        image.height * scale * ratio,
+        rect.width * state.area.left - state.image.width * state.view.left * state.scale * state.ratio,
+        rect.height * state.area.top - state.image.height * state.view.top * state.scale * state.ratio,
+        state.image.width * state.scale * state.ratio,
+        state.image.height * state.scale * state.ratio,
       );
 
       canvas.save();
       canvas.clipRect(Rect.fromLTWH(0.0, 0.0, rect.width, rect.height));
-      canvas.drawImageRect(image, src, dst, paint);
+      canvas.drawImageRect(state.image, src, dst, paint);
       canvas.restore();
     }
 
@@ -561,13 +574,13 @@ class _CropPainter extends CustomPainter {
         0x0,
         0x0,
         0x0,
-        _kCropOverlayActiveOpacity * active +
-            _kCropOverlayInactiveOpacity * (1.0 - active));
+        _kCropOverlayActiveOpacity * state.active +
+            _kCropOverlayInactiveOpacity * (1.0 - state.active));
     final boundaries = Rect.fromLTWH(
-      rect.width * area.left,
-      rect.height * area.top,
-      rect.width * area.width,
-      rect.height * area.height,
+      rect.width * state.area.left,
+      rect.height * state.area.top,
+      rect.width * state.area.width,
+      rect.height * state.area.height,
     );
     canvas.drawRect(Rect.fromLTRB(0.0, 0.0, rect.width, boundaries.top), paint);
     canvas.drawRect(
@@ -589,6 +602,8 @@ class _CropPainter extends CustomPainter {
   }
 
   void _drawHandles(Canvas canvas, Rect boundaries) {
+    if (state.isDrawCropHandle == false) return;
+
     final paint = Paint()
       ..isAntiAlias = true
       ..color = _kCropHandleColor;
@@ -635,11 +650,11 @@ class _CropPainter extends CustomPainter {
   }
 
   void _drawGrid(Canvas canvas, Rect boundaries) {
-    if (active == 0.0) return;
+    if (state.active == 0.0) return;
 
     final paint = Paint()
       ..isAntiAlias = false
-      ..color = _kCropGridColor.withOpacity(_kCropGridColor.opacity * active)
+      ..color = _kCropGridColor.withOpacity(_kCropGridColor.opacity * state.active)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
@@ -671,3 +686,18 @@ class _CropPainter extends CustomPainter {
     canvas.drawPath(path, paint);
   }
 }
+
+abstract class AbstractCropPainter extends CustomPainter {
+  final CropPaintState state;
+
+  AbstractCropPainter({
+    this.state,
+  });
+
+  @override
+  bool shouldRepaint(AbstractCropPainter oldDelegate) {
+    return oldDelegate.state != state;
+  }
+}
+
+typedef CropPainterBuilder = CustomPainter Function(CropPaintState state);
