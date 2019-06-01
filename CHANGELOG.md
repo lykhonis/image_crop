@@ -1,3 +1,9 @@
+## 0.3.0
+
+* Android gradle upgrade to 3.4.1. Gradle 5.1.1
+* Flutter upgrade 1.6.6
+* Android target SDK 28
+
 ## 0.2.1
 
 * Read exif information to provide proper width/height according to the orientation
