@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import androidx.annotation.NonNull;
 import androidx.exifinterface.media.ExifInterface;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
@@ -44,7 +45,6 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
 
     private ImageCropPlugin(Activity activity) {
         this.activity = activity;
-        this.executor = Executors.newCachedThreadPool();
     }
 
     public static void registerWith(Registrar registrar) {
@@ -81,19 +81,40 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         }
     }
 
+    private synchronized void io(@NonNull Runnable runnable) {
+        if (executor == null) {
+            executor = Executors.newCachedThreadPool();
+        }
+        executor.execute(runnable);
+    }
+
+    private void ui(@NonNull Runnable runnable) {
+        activity.runOnUiThread(runnable);
+    }
+
     private void cropImage(final String path, final RectF area, final float scale, final Result result) {
-        executor.execute(new Runnable() {
+        io(new Runnable() {
             @Override
             public void run() {
                 File srcFile = new File(path);
                 if (!srcFile.exists()) {
-                    result.error("INVALID", "Image source cannot be opened", null);
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.error("INVALID", "Image source cannot be opened", null);
+                        }
+                    });
                     return;
                 }
 
                 Bitmap srcBitmap = BitmapFactory.decodeFile(path, null);
                 if (srcBitmap == null) {
-                    result.error("INVALID", "Image source cannot be decoded", null);
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.error("INVALID", "Image source cannot be decoded", null);
+                        }
+                    });
                     return;
                 }
 
@@ -139,11 +160,21 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
 //                canvas.drawBitmap(srcBitmap, transformations, paint);
 
                 try {
-                    File dstFile = createTemporaryImageFile();
+                    final File dstFile = createTemporaryImageFile();
                     compressBitmap(dstBitmap, dstFile);
-                    result.success(dstFile.getAbsolutePath());
-                } catch (IOException e) {
-                    result.error("INVALID", "Image could not be saved", e);
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.success(dstFile.getAbsolutePath());
+                        }
+                    });
+                } catch (final IOException e) {
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.error("INVALID", "Image could not be saved", e);
+                        }
+                    });
                 } finally {
                     canvas.setBitmap(null);
                     dstBitmap.recycle();
@@ -154,12 +185,17 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
     }
 
     private void sampleImage(final String path, final int maximumWidth, final int maximumHeight, final Result result) {
-        executor.execute(new Runnable() {
+        io(new Runnable() {
             @Override
             public void run() {
                 File srcFile = new File(path);
                 if (!srcFile.exists()) {
-                    result.error("INVALID", "Image source cannot be opened", null);
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.error("INVALID", "Image source cannot be opened", null);
+                        }
+                    });
                     return;
                 }
 
@@ -170,7 +206,12 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
 
                 Bitmap bitmap = BitmapFactory.decodeFile(path, bitmapOptions);
                 if (bitmap == null) {
-                    result.error("INVALID", "Image source cannot be decoded", null);
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.error("INVALID", "Image source cannot be decoded", null);
+                        }
+                    });
                     return;
                 }
 
@@ -182,12 +223,22 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
                 }
 
                 try {
-                    File dstFile = createTemporaryImageFile();
+                    final File dstFile = createTemporaryImageFile();
                     compressBitmap(bitmap, dstFile);
                     copyExif(srcFile, dstFile);
-                    result.success(dstFile.getAbsolutePath());
-                } catch (IOException e) {
-                    result.error("INVALID", "Image could not be saved", e);
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.success(dstFile.getAbsolutePath());
+                        }
+                    });
+                } catch (final IOException e) {
+                    ui(new Runnable() {
+                        @Override
+                        public void run() {
+                            result.error("INVALID", "Image could not be saved", e);
+                        }
+                    });
                 } finally {
                     bitmap.recycle();
                 }
@@ -227,7 +278,7 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
     }
 
     private void getImageOptions(final String path, final Result result) {
-        executor.execute(new Runnable() {
+        io(new Runnable() {
             @Override
             public void run() {
                 File file = new File(path);
@@ -237,11 +288,16 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
                 }
 
                 ImageOptions options = decodeImageOptions(path);
-                Map<String, Object> properties = new HashMap<>();
+                final Map<String, Object> properties = new HashMap<>();
                 properties.put("width", options.getWidth());
                 properties.put("height", options.getHeight());
 
-                result.success(properties);
+                ui(new Runnable() {
+                    @Override
+                    public void run() {
+                        result.success(properties);
+                    }
+                });
             }
         });
     }
@@ -346,25 +402,25 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         private int height;
         private int degrees;
 
-        public ImageOptions(int width, int height, int degrees) {
+        ImageOptions(int width, int height, int degrees) {
             this.width = width;
             this.height = height;
             this.degrees = degrees;
         }
 
-        public int getHeight() {
+        int getHeight() {
             return isFlippedDimensions() ? width : height;
         }
 
-        public int getWidth() {
+        int getWidth() {
             return isFlippedDimensions() ? height : width;
         }
 
-        public int getDegrees() {
+        int getDegrees() {
             return degrees;
         }
 
-        public boolean isFlippedDimensions() {
+        boolean isFlippedDimensions() {
             return degrees == 90 || degrees == 270;
         }
 
