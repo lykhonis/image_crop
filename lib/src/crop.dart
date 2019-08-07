@@ -18,7 +18,6 @@ class Crop extends StatefulWidget {
   final double aspectRatio;
   final double maximumScale;
   final bool alwaysShowGrid;
-  final ImageErrorListener onImageError;
 
   const Crop({
     Key key,
@@ -26,7 +25,6 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
-    this.onImageError,
   })  : assert(image != null),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -39,7 +37,6 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
-    this.onImageError,
   })  : image = FileImage(file, scale: scale),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -53,7 +50,6 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale: 2.0,
     this.alwaysShowGrid: false,
-    this.onImageError,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         assert(maximumScale != null),
         assert(alwaysShowGrid != null),
@@ -63,7 +59,8 @@ class Crop extends StatefulWidget {
   State<StatefulWidget> createState() => CropState();
 
   static CropState of(BuildContext context) {
-    return context.ancestorStateOfType(const TypeMatcher<CropState>());
+    final state = context.ancestorStateOfType(const TypeMatcher<CropState>());
+    return state;
   }
 }
 
@@ -84,7 +81,6 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   Rect _startView;
   Tween<Rect> _viewTween;
   Tween<double> _scaleTween;
-  ImageStreamListener _imageListener;
 
   double get scale => _area.shortestSide / _scale;
 
@@ -121,7 +117,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
 
   @override
   void dispose() {
-    _imageStream?.removeListener(_imageListener);
+    _imageStream?.removeListener(ImageStreamListener(_updateImage));
     _activeController.dispose();
     _settleController.dispose();
     super.dispose();
@@ -159,10 +155,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     final oldImageStream = _imageStream;
     _imageStream = widget.image.resolve(createLocalImageConfiguration(context));
     if (_imageStream.key != oldImageStream?.key || force) {
-      oldImageStream?.removeListener(_imageListener);
-      _imageListener =
-          ImageStreamListener(_updateImage, onError: widget.onImageError);
-      _imageStream.addListener(_imageListener);
+      oldImageStream?.removeListener(ImageStreamListener(_updateImage));
+      _imageStream.addListener(ImageStreamListener(_updateImage));
     }
   }
 
