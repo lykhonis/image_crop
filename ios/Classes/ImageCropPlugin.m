@@ -57,9 +57,15 @@
                                        details:nil]);
             return;
         }
+
+        CFDictionaryRef options = (__bridge CFDictionaryRef) @{
+                                                               (id) kCGImageSourceCreateThumbnailWithTransform: @YES,
+                                                               (id) kCGImageSourceCreateThumbnailFromImageAlways: @YES
+                                                               };
+
+        CGImageRef image = CGImageSourceCreateThumbnailAtIndex(imageSource, 0, options);
         
-        CGImageRef image = CGImageSourceCreateImageAtIndex(imageSource, 0, NULL);
-        
+
         if (image == NULL) {
             result([FlutterError errorWithCode:@"INVALID"
                                        message:@"Image cannot be opened"
