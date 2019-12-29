@@ -1,3 +1,8 @@
+## 0.3.2
+
+* Fixes #33. Image rotation bug after cropping on iOS
+* Flutter upgrade v1.13.5
+
 ## 0.3.1
 
 * Fixes #19. Painting of the image is independent of top/left handles

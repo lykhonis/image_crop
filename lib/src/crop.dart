@@ -63,7 +63,7 @@ class Crop extends StatefulWidget {
   State<StatefulWidget> createState() => CropState();
 
   static CropState of(BuildContext context) {
-    return context.ancestorStateOfType(const TypeMatcher<CropState>());
+    return context.findAncestorStateOfType<CropState>();
   }
 }
 
