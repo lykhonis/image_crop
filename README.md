@@ -2,8 +2,7 @@
 
 A flutter plugin to crop image on iOS and Android.
 
-![Image Cropping Active](assets/image_cropping_active.jpg)
-![Image Cropping Idle](assets/image_cropping_idle.jpg)
+![Image Cropping Preview](assets/image_cropping_preview.gif)
 
 The plugin comes with a `Crop` widget. The widget renders only image, overlay, and handles to crop an image. Thus it can be composed with other widgets to build custom image cropping experience. 
 
