@@ -28,30 +28,92 @@ import androidx.annotation.NonNull;
 import androidx.exifinterface.media.ExifInterface;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import io.flutter.plugin.common.BinaryMessenger;
 
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
-public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.RequestPermissionsResultListener {
+public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.RequestPermissionsResultListener, FlutterPlugin, ActivityAware {
     private static final int PERMISSION_REQUEST_CODE = 13094;
 
-    private final Activity activity;
+    private Activity activity;
     private Result permissionRequestResult;
     private ExecutorService executor;
+    private FlutterPluginBinding pluginBinding;
+    
 
-    private ImageCropPlugin(Activity activity) {
-        this.activity = activity;
+public ImageCropPlugin() {
     }
+    
+     @Override
+  public void onAttachedToEngine(FlutterPluginBinding binding) {
+    pluginBinding = binding;
+  }
+
+  @Override
+  public void onDetachedFromEngine(FlutterPluginBinding binding) {
+  }
+
+  @Override
+  public void onAttachedToActivity(ActivityPluginBinding binding) {
+      setup(
+        pluginBinding.getBinaryMessenger(),
+        binding.getActivity(),
+        null,
+        binding);
+  }
+
+  @Override
+  public void onDetachedFromActivity() {
+    
+  }
+
+  @Override
+  public void onDetachedFromActivityForConfigChanges() {
+  }
+
+  @Override
+  public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
+    onAttachedToActivity(binding);
+  }
+
+   
+
+
 
     public static void registerWith(Registrar registrar) {
-        MethodChannel channel = new MethodChannel(registrar.messenger(), "plugins.lykhonis.com/image_crop");
-        ImageCropPlugin instance = new ImageCropPlugin(registrar.activity());
-        channel.setMethodCallHandler(instance);
-        registrar.addRequestPermissionsResultListener(instance);
+    if (registrar.activity() == null) {
+      // If a background flutter view tries to register the plugin, there will be no activity from the registrar,
+      // we stop the registering process immediately because the ImagePicker requires an activity.
+      return;
+    }
+     
+     ImageCropPlugin instance = new ImageCropPlugin();
+     instance.activity = registrar.activity();
+     MethodChannel channel = new MethodChannel(registrar.messenger(), "plugins.lykhonis.com/image_crop");
+    //  instance.setup(registrar.messenger(), application, this.activity, registrar, null);
+     channel.setMethodCallHandler(instance);
+      registrar.addRequestPermissionsResultListener(instance);
+
+    }
+
+    private void setup(final BinaryMessenger messenger,
+      final Activity activity,
+      final PluginRegistry.Registrar registrar,
+      final ActivityPluginBinding activityBinding) {
+
+      // V2 embedding setup for activity listeners.
+      MethodChannel channel = new MethodChannel(messenger, "plugins.lykhonis.com/image_crop");
+      this.activity = activity;
+      channel.setMethodCallHandler(this);
+      activityBinding.addRequestPermissionsResultListener(this);
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -338,7 +400,7 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
     }
 
     private File createTemporaryImageFile() throws IOException {
-        File directory = activity.getCacheDir();
+        File directory = this.activity.getCacheDir();
         String name = "image_crop_" + UUID.randomUUID().toString();
         return File.createTempFile(name, ".jpg", directory);
     }
