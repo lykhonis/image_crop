@@ -59,8 +59,7 @@ class Crop extends StatefulWidget {
   State<StatefulWidget> createState() => CropState();
 
   static CropState of(BuildContext context) {
-    final state = context.ancestorStateOfType(const TypeMatcher<CropState>());
-    return state;
+    return context.findAncestorStateOfType<CropState>();
   }
 }
 
@@ -87,11 +86,11 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   Rect get area {
     return _view.isEmpty
         ? null
-        : Rect.fromLTRB(
-            _view.left,
-            _view.top,
-            _view.left + _view.width * _area.width / _scale,
-            _view.top + _view.height * _area.height / _scale,
+        : Rect.fromLTWH(
+            _area.left * _view.width / _scale - _view.left,
+            _area.top * _view.height / _scale - _view.top,
+            _area.width * _view.width / _scale,
+            _area.height * _view.height / _scale,
           );
   }
 
@@ -253,8 +252,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
           imageHeight: _image.height,
         );
         _view = Rect.fromLTWH(
-          (1.0 - viewWidth) / 2 + _area.left,
-          (1.0 - viewHeight) / 2 + _area.top,
+          (viewWidth - 1.0) / 2,
+          (viewHeight - 1.0) / 2,
           viewWidth,
           viewHeight,
         );
@@ -322,22 +321,23 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   }
 
   Rect _getViewInBoundaries(double scale) {
-    double left = _view.left;
-    double top = _view.top;
-
-    if (left < 0.0) {
-      left = 0.0;
-    } else if (left > 1.0 - _view.width * _area.width / scale) {
-      left = 1.0 - _view.width * _area.width / scale;
-    }
-
-    if (top < 0.0) {
-      top = 0.0;
-    } else if (top > 1.0 - _view.height * _area.height / scale) {
-      top = 1.0 - _view.height * _area.height / scale;
-    }
-
-    return Offset(left, top) & _view.size;
+    return Offset(
+          max(
+            min(
+              _view.left,
+              _area.left * _view.width / scale,
+            ),
+            _area.right * _view.width / scale - 1.0,
+          ),
+          max(
+            min(
+              _view.top,
+              _area.top * _view.height / scale,
+            ),
+            _area.bottom * _view.height / scale - 1.0,
+          ),
+        ) &
+        _view.size;
   }
 
   double get _maximumScale => widget.maximumScale;
@@ -465,7 +465,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         _updateArea(right: dx, bottom: dy);
       }
     } else if (_action == _CropAction.moving) {
-      final delta = _lastFocalPoint - details.focalPoint;
+      final delta = details.focalPoint - _lastFocalPoint;
       _lastFocalPoint = details.focalPoint;
 
       setState(() {
@@ -486,8 +486,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
             (_image.height * _scale * _ratio);
 
         _view = Rect.fromLTWH(
-          _startView.left - dx / 2,
-          _startView.top - dy / 2,
+          _startView.left + dx / 2,
+          _startView.top + dy / 2,
           _startView.width,
           _startView.height,
         );
@@ -545,8 +545,8 @@ class _CropPainter extends CustomPainter {
         image.height.toDouble(),
       );
       final dst = Rect.fromLTWH(
-        rect.width * area.left - image.width * view.left * scale * ratio,
-        rect.height * area.top - image.height * view.top * scale * ratio,
+        view.left * image.width * scale * ratio,
+        view.top * image.height * scale * ratio,
         image.width * scale * ratio,
         image.height * scale * ratio,
       );
@@ -646,8 +646,8 @@ class _CropPainter extends CustomPainter {
     final path = Path()
       ..moveTo(boundaries.left, boundaries.top)
       ..lineTo(boundaries.right, boundaries.top)
-      ..lineTo(boundaries.right - 1, boundaries.bottom - 1)
-      ..lineTo(boundaries.left, boundaries.bottom - 1)
+      ..lineTo(boundaries.right, boundaries.bottom)
+      ..lineTo(boundaries.left, boundaries.bottom)
       ..lineTo(boundaries.left, boundaries.top);
 
     for (var column = 1; column < _kCropGridColumnCount; column++) {
@@ -657,14 +657,14 @@ class _CropPainter extends CustomPainter {
             boundaries.top)
         ..lineTo(
             boundaries.left + column * boundaries.width / _kCropGridColumnCount,
-            boundaries.bottom - 1);
+            boundaries.bottom);
     }
 
     for (var row = 1; row < _kCropGridRowCount; row++) {
       path
         ..moveTo(boundaries.left,
             boundaries.top + row * boundaries.height / _kCropGridRowCount)
-        ..lineTo(boundaries.right - 1,
+        ..lineTo(boundaries.right,
             boundaries.top + row * boundaries.height / _kCropGridRowCount);
     }
 

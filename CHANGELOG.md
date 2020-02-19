@@ -1,3 +1,13 @@
+## 0.3.2
+
+* Fixes #33. Image rotation bug after cropping on iOS
+* Flutter upgrade v1.13.5
+
+## 0.3.1
+
+* Fixes #19. Painting of the image is independent of top/left handles
+* Visual correction of a grid. It was tilted by 1 point
+
 ## 0.3.0
 
 * Android gradle upgrade to 3.4.1. Gradle 5.1.1
