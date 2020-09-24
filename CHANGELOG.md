@@ -1,3 +1,7 @@
+## 0.3.3
+
+* migrate to the new Android APIs based on FlutterPlugin
+
 ## 0.3.2
 
 * Fixes #33. Image rotation bug after cropping on iOS

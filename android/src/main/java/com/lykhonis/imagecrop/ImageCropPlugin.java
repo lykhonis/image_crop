@@ -26,20 +26,28 @@ import java.util.concurrent.Executors;
 
 import androidx.annotation.NonNull;
 import androidx.exifinterface.media.ExifInterface;
+
+import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 
 import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
-public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.RequestPermissionsResultListener {
+public final class ImageCropPlugin implements FlutterPlugin , ActivityAware, MethodCallHandler, PluginRegistry.RequestPermissionsResultListener {
     private static final int PERMISSION_REQUEST_CODE = 13094;
 
-    private final Activity activity;
+    private MethodChannel channel;
+
+    private ActivityPluginBinding binding;
+    private Activity activity;
     private Result permissionRequestResult;
     private ExecutorService executor;
 
@@ -47,12 +55,58 @@ public final class ImageCropPlugin implements MethodCallHandler, PluginRegistry.
         this.activity = activity;
     }
 
+    public ImageCropPlugin(){ }
+
+    /**
+     * legacy APIs
+     */
     public static void registerWith(Registrar registrar) {
-        MethodChannel channel = new MethodChannel(registrar.messenger(), "plugins.lykhonis.com/image_crop");
         ImageCropPlugin instance = new ImageCropPlugin(registrar.activity());
-        channel.setMethodCallHandler(instance);
+        instance.setup(registrar.messenger());
         registrar.addRequestPermissionsResultListener(instance);
     }
+
+    @Override
+    public void onAttachedToEngine(@NonNull FlutterPluginBinding binding) {
+      this.setup(binding.getBinaryMessenger());
+    }
+  
+    @Override
+    public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
+        channel.setMethodCallHandler(null);
+        channel = null;
+    }
+
+    @Override
+    public void onAttachedToActivity(ActivityPluginBinding activityPluginBinding) {
+        binding = activityPluginBinding;
+        activity = activityPluginBinding.getActivity();
+        activityPluginBinding.addRequestPermissionsResultListener(this);
+    }
+   
+    @Override
+    public void onDetachedFromActivity() {
+        activity = null;
+        if(binding != null){
+            binding.removeRequestPermissionsResultListener(this);
+        }
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(ActivityPluginBinding activityPluginBinding) {
+        this.onAttachedToActivity(activityPluginBinding);
+    }
+  
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+        this.onDetachedFromActivity();
+    }
+  
+    private void setup(BinaryMessenger messenger) {
+        channel = new MethodChannel(messenger, "plugins.lykhonis.com/image_crop");
+        channel.setMethodCallHandler(this);
+    }
+
 
     @SuppressWarnings("ConstantConditions")
     @Override
