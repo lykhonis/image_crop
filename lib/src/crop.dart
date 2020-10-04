@@ -15,6 +15,7 @@ enum _CropHandleSide { none, topLeft, topRight, bottomLeft, bottomRight }
 
 class Crop extends StatefulWidget {
   final ImageProvider image;
+  final Function(Canvas canvas, Rect boundaries) drawGridFunction;
   final double aspectRatio;
   final double maximumScale;
   final bool alwaysShowGrid;
@@ -25,6 +26,7 @@ class Crop extends StatefulWidget {
     this.image,
     this.aspectRatio,
     this.maximumScale: 2.0,
+    this.drawGridFunction,
     this.alwaysShowGrid: false,
     this.onImageError,
   })  : assert(image != null),
@@ -38,6 +40,7 @@ class Crop extends StatefulWidget {
     double scale = 1.0,
     this.aspectRatio,
     this.maximumScale: 2.0,
+    this.drawGridFunction,
     this.alwaysShowGrid: false,
     this.onImageError,
   })  : image = FileImage(file, scale: scale),
@@ -52,6 +55,7 @@ class Crop extends StatefulWidget {
     String package,
     this.aspectRatio,
     this.maximumScale: 2.0,
+    this.drawGridFunction,
     this.alwaysShowGrid: false,
     this.onImageError,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
@@ -179,6 +183,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         child: CustomPaint(
           painter: _CropPainter(
             image: _image,
+            drawGridFunction: widget.drawGridFunction,
             ratio: _ratio,
             view: _view,
             area: _area,
@@ -510,6 +515,7 @@ class _CropPainter extends CustomPainter {
   final Rect area;
   final double scale;
   final double active;
+  final Function(Canvas canvas, Rect boundaries) drawGridFunction;
 
   _CropPainter({
     this.image,
@@ -518,6 +524,7 @@ class _CropPainter extends CustomPainter {
     this.area,
     this.scale,
     this.active,
+    this.drawGridFunction
   });
 
   @override
@@ -644,12 +651,17 @@ class _CropPainter extends CustomPainter {
   void _drawGrid(Canvas canvas, Rect boundaries) {
     if (active == 0.0) return;
 
+    if (drawGridFunction != null){
+      drawGridFunction(canvas, boundaries);
+      return;
+    }
+
     final paint = Paint()
       ..isAntiAlias = false
       ..color = _kCropGridColor.withOpacity(_kCropGridColor.opacity * active)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
-
+  
     final path = Path()
       ..moveTo(boundaries.left, boundaries.top)
       ..lineTo(boundaries.right, boundaries.top)
