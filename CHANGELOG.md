@@ -1,3 +1,7 @@
+## 0.3.4
+
+* fixes several issues related to scaling and multi-touch support
+
 ## 0.3.3
 
 * migrate to the new Android APIs based on FlutterPlugin
