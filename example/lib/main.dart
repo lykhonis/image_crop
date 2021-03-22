@@ -66,7 +66,7 @@ class _MyAppState extends State<MyApp> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[
-              FlatButton(
+              TextButton(
                 child: Text(
                   'Crop Image',
                   style: Theme.of(context)
@@ -85,7 +85,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildOpenImage() {
-    return FlatButton(
+    return TextButton(
       child: Text(
         'Open Image',
         style: Theme.of(context).textTheme.button.copyWith(color: Colors.white),
