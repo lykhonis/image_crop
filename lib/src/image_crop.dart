@@ -13,22 +13,26 @@ class ImageOptions {
   int get hashCode => hashValues(width, height);
 
   @override
-  bool operator ==(other) => other is ImageOptions && other.width == width && other.height == height;
+  bool operator ==(other) =>
+      other is ImageOptions && other.width == width && other.height == height;
 
   @override
   String toString() => '$runtimeType(width: $width, height: $height)';
 }
 
 class ImageCrop {
-  static const _channel = const MethodChannel('plugins.lykhonis.com/image_crop');
+  static const _channel =
+      const MethodChannel('plugins.lykhonis.com/image_crop');
 
-  static Future<bool> requestPermissions() =>
-      _channel.invokeMethod('requestPermissions').then<bool>((result) => result);
+  static Future<bool> requestPermissions() => _channel
+      .invokeMethod('requestPermissions')
+      .then<bool>((result) => result);
 
   static Future<ImageOptions> getImageOptions({
     required File file,
   }) async {
-    final result = await _channel.invokeMethod('getImageOptions', {'path': file.path});
+    final result =
+        await _channel.invokeMethod('getImageOptions', {'path': file.path});
 
     return ImageOptions(
       width: result['width'],
@@ -57,8 +61,10 @@ class ImageCrop {
     int? preferredHeight,
   }) async {
     assert(() {
-      if (preferredSize == null && (preferredWidth == null || preferredHeight == null)) {
-        throw ArgumentError('Preferred size or both width and height of a resampled image must be specified.');
+      if (preferredSize == null &&
+          (preferredWidth == null || preferredHeight == null)) {
+        throw ArgumentError(
+            'Preferred size or both width and height of a resampled image must be specified.');
       }
       return true;
     }());
