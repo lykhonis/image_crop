@@ -66,7 +66,7 @@ class _MyAppState extends State<MyApp> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: <Widget>[
-              FlatButton(
+              TextButton(
                 child: Text(
                   'Crop Image',
                   style: Theme.of(context)
@@ -85,7 +85,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Widget _buildOpenImage() {
-    return FlatButton(
+    return TextButton(
       child: Text(
         'Open Image',
         style: Theme.of(context).textTheme.button.copyWith(color: Colors.white),
@@ -95,7 +95,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _openImage() async {
-    final file = await ImagePicker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
+    final file = File(pickedFile.path);
     final sample = await ImageCrop.sampleImage(
       file: file,
       preferredSize: context.size.longestSide.ceil(),
