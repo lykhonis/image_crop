@@ -463,11 +463,11 @@ public final class ImageCropPlugin implements FlutterPlugin , ActivityAware, Met
         }
 
         int getHeight() {
-            return isFlippedDimensions() ? width : height;
+            return (isFlippedDimensions() && degrees != 180) ? width : height;
         }
 
         int getWidth() {
-            return isFlippedDimensions() ? height : width;
+            return (isFlippedDimensions() && degrees != 180) ? height : width;
         }
 
         int getDegrees() {
@@ -475,7 +475,7 @@ public final class ImageCropPlugin implements FlutterPlugin , ActivityAware, Met
         }
 
         boolean isFlippedDimensions() {
-            return degrees == 90 || degrees == 270;
+            return degrees == 90 || degrees == 270  || degrees == 180;
         }
 
         public boolean isRotated() {
