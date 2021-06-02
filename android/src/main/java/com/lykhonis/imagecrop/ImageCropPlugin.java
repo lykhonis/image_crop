@@ -269,8 +269,8 @@ public final class ImageCropPlugin implements FlutterPlugin , ActivityAware, Met
                     return;
                 }
 
-                if (options.getWidth() > maximumWidth && options.getHeight() > maximumHeight) {
-                    float ratio = Math.max(maximumWidth / (float) options.getWidth(), maximumHeight / (float) options.getHeight());
+                float ratio = Math.max(maximumWidth / (float) bitmap.getWidth(), maximumHeight / (float) bitmap.getHeight());
+                if (ratio < 1) {
                     Bitmap sample = bitmap;
                     bitmap = Bitmap.createScaledBitmap(sample, Math.round(bitmap.getWidth() * ratio), Math.round(bitmap.getHeight() * ratio), true);
                     sample.recycle();
