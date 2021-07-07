@@ -113,7 +113,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   @override
   void initState() {
     super.initState();
-    assert(() {
+    assert(() {  // check validity of area width and height
       final fixedAreaWidth = widget.fixedAreaWidth ?? 1.0;
       final fixedAreaHeight = widget.fixedAreaHeight ?? 1.0;
       if (fixedAreaWidth <= 0 ||
@@ -284,7 +284,6 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     double width;
 
     if ((widget.aspectRatio ?? 1.0) < 1) {
-      // height = 1.0;
       height = (widget.fixedAreaHeight ?? 1.0);
       width = widget.fixedAreaWidth ??
           (((widget.aspectRatio ?? 1.0) * imageHeight * viewHeight * height) /
@@ -297,13 +296,11 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
                 (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0)));
       }
     } else {
-      // width = 1.0;
       width = (widget.fixedAreaWidth ?? 1.0);
       height = widget.fixedAreaHeight ??
           ((imageWidth * viewWidth * width) /
               (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0)));
       if (height > 1.0) {
-        // height = 1.0;
         height = (widget.fixedAreaHeight ?? 1.0);
         width = widget.fixedAreaWidth ??
             (((widget.aspectRatio ?? 1.0) * imageHeight * viewHeight * height) /
