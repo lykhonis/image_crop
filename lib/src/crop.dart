@@ -325,6 +325,9 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
           viewWidth,
           viewHeight,
         );
+        // disable initial magnification
+        _scale = _minimumScale ?? 1.0;
+        _view = _getViewInBoundaries(_scale);
       });
     });
 
