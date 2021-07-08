@@ -60,6 +60,7 @@ class ImageCrop {
   static Future<File> cropImageRestricted({
     required File file,
     required Rect area,
+    bool exact = false,
     int? preferredWidth,
     int? preferredHeight
   }) =>
@@ -70,7 +71,7 @@ class ImageCrop {
         'right': area.right,
         'bottom': area.bottom,
         'scale': 1.0,
-      }).then<File>((result) => File(result)).then<File>((result) => sampleImageRestricted(file: result, preferredWidth: preferredWidth, preferredHeight: preferredHeight));
+      }).then<File>((result) => File(result)).then<File>((result) => sampleImageRestricted(file: result, exact: exact, preferredWidth: preferredWidth, preferredHeight: preferredHeight));
 
   static Future<File> sampleImage({
     required File file,
@@ -97,6 +98,7 @@ class ImageCrop {
   }
   static Future<File> sampleImageRestricted({
     required File file,
+    bool exact=false,
     int? preferredSize,
     int? preferredWidth,
     int? preferredHeight,
@@ -109,13 +111,23 @@ class ImageCrop {
       }
       return true;
     }());
+    if(exact){
+      final String path = await _channel.invokeMethod('sampleImageRestricted', {
+        'path': file.path,
+        'maximumWidth': preferredSize ?? preferredWidth,
+        'maximumHeight': preferredSize ?? preferredHeight,
+      });
+      return File(path);
+    }else{
+      final String path = await _channel.invokeMethod('sampleImage', {
+        'path': file.path,
+        'maximumWidth': preferredSize ?? preferredWidth,
+        'maximumHeight': preferredSize ?? preferredHeight,
+      });
+      return File(path);
+    }
 
-    final String path = await _channel.invokeMethod('sampleImageRestricted', {
-      'path': file.path,
-      'maximumWidth': preferredSize ?? preferredWidth,
-      'maximumHeight': preferredSize ?? preferredHeight,
-    });
 
-    return File(path);
   }
 }
+

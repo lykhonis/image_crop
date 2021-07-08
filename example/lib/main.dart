@@ -143,8 +143,9 @@ class _MyAppState extends State<MyApp> {
     final file = await ImageCrop.cropImageRestricted(
       file: _file,
       area: area,
-      preferredHeight: 700,
-      preferredWidth: 900
+      exact: true,
+      preferredHeight: 800,
+      preferredWidth: 600
     );
 
     debugPrint(ImageCrop.getImageOptions(file: file).toString().toString().toString());
@@ -166,3 +167,4 @@ class _MyAppState extends State<MyApp> {
 
   }
 }
+

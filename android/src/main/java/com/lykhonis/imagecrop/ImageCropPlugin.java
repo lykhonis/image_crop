@@ -335,12 +335,12 @@ public final class ImageCropPlugin implements FlutterPlugin , ActivityAware, Met
                     return;
                 }
 
-                if (options.getWidth() > maximumWidth && options.getHeight() > maximumHeight) {
-//                    float ratio = Math.max(maximumWidth / (float) options.getWidth(), maximumHeight / (float) options.getHeight());
-                    Bitmap sample = bitmap;
-                    bitmap = Bitmap.createScaledBitmap(sample, maximumWidth, maximumHeight, true);
-                    sample.recycle();
-                }
+
+
+                Bitmap sample = bitmap;
+                bitmap = Bitmap.createScaledBitmap(sample, maximumWidth, maximumHeight, true);
+                sample.recycle();
+
 
                 try {
                     final File dstFile = createTemporaryImageFile();
