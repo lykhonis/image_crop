@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:image_crop/image_crop.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+
 void main() {
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -35,7 +38,13 @@ class _MyAppState extends State<MyApp> {
     _sample?.delete();
     _lastCropped?.delete();
   }
+  Future<String> getFilePath() async {
+    Directory appDocumentsDirectory = await getApplicationDocumentsDirectory(); // 1
+    String appDocumentsPath = appDocumentsDirectory.path; // 2
+    String filePath = '$appDocumentsPath/demoTextFile.txt'; // 3
 
+    return filePath;
+  }
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -121,21 +130,39 @@ class _MyAppState extends State<MyApp> {
 
     // scale up to use maximum possible number of pixels
     // this will sample image in higher resolution to make cropped image larger
-    final sample = await ImageCrop.sampleImage(
+    // final sample = await ImageCrop.sampleImage(
+    //   file: _file,
+    //   preferredSize: (2000 / scale).round(),
+    // );
+
+    // final file = await ImageCrop.cropImage(
+    //   file: _file,
+    //   area: area,
+    // );
+
+    final file = await ImageCrop.cropImageRestricted(
       file: _file,
-      preferredSize: (2000 / scale).round(),
-    );
-
-    final file = await ImageCrop.cropImage(
-      file: sample,
       area: area,
+      preferredHeight: 700,
+      preferredWidth: 900
     );
 
-    sample.delete();
+    debugPrint(ImageCrop.getImageOptions(file: file).toString().toString().toString());
+
+    final file2 = await ImageCrop.cropImage(
+        file: _file,
+        area: area,
+    );
+    debugPrint(ImageCrop.getImageOptions(file: file2).toString().toString().toString());
+    // sample.delete();
 
     _lastCropped?.delete();
     _lastCropped = file;
 
     debugPrint('$file');
+
+
+
+
   }
 }
