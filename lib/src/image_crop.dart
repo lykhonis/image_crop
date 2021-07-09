@@ -18,6 +18,8 @@ class ImageOptions {
 
   @override
   String toString() => '$runtimeType(width: $width, height: $height)';
+
+
 }
 
 class ImageCrop {
@@ -33,10 +35,9 @@ class ImageCrop {
   }) async {
     final result =
         await _channel.invokeMethod('getImageOptions', {'path': file.path});
-    debugPrint("width: ");
-    debugPrint(result['width'].toString());
-    debugPrint("height: ");
-    debugPrint(result['height'].toString());
+    
+    debugPrint("\t width: " + result['width'].toString());
+    debugPrint("\t height: " + result['height'].toString());
     return ImageOptions(
       width: result['width'],
       height: result['height'],

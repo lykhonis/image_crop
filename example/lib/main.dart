@@ -130,32 +130,54 @@ class _MyAppState extends State<MyApp> {
 
     // scale up to use maximum possible number of pixels
     // this will sample image in higher resolution to make cropped image larger
-    // final sample = await ImageCrop.sampleImage(
-    //   file: _file,
-    //   preferredSize: (2000 / scale).round(),
-    // );
+    final sample = await ImageCrop.sampleImage(
+      file: _file,
+      preferredSize: (2000 / scale).round(),
+    );
 
-    // final file = await ImageCrop.cropImage(
-    //   file: _file,
-    //   area: area,
-    // );
 
     final file = await ImageCrop.cropImageRestricted(
-      file: _file,
+      file: sample,
       area: area,
       exact: true,
       preferredHeight: 800,
       preferredWidth: 600
     );
 
-    debugPrint(ImageCrop.getImageOptions(file: file).toString().toString().toString());
+    //restricted crop height and width
+    debugPrint("Restricted crop: ");
+    debugPrint(ImageCrop.getImageOptions(file: file).toString());
+
 
     final file2 = await ImageCrop.cropImage(
-        file: _file,
+        file: sample,
         area: area,
     );
-    debugPrint(ImageCrop.getImageOptions(file: file2).toString().toString().toString());
-    // sample.delete();
+    //unrestricted crop height and width
+    debugPrint("Unrestricted crop: ");
+    debugPrint(ImageCrop.getImageOptions(file: file2).toString());
+
+
+    var rawCoords = cropKey.currentState.rawCropAreaCoords;
+    if(rawCoords != null){
+      debugPrint("crop area raw coordinates: \n" + "\t top left: " + rawCoords[0].toString()
+          + "\n\t width: " + rawCoords[1].toString()
+          + "\n\t height: " + rawCoords[2].toString());
+    }else{
+      debugPrint("no area specified");
+    }
+
+    var coords = cropKey.currentState.cropAreaCoords;
+    if(coords != null) {
+      debugPrint(
+          "crop area relative coordinates: \n" + "\t top left: " + coords[0].toString()
+              + "\n\t width: " + coords[1].toString()
+              + "\n\t height: " + coords[2].toString());
+    }else{
+      debugPrint("no area specified");
+    }
+
+    sample.delete();
 
     _lastCropped?.delete();
     _lastCropped = file;
