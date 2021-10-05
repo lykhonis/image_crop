@@ -1,4 +1,4 @@
-part of image_crop;
+part of image_crop_plus;
 
 class ImageOptions {
   final int width;
@@ -22,7 +22,7 @@ class ImageOptions {
 
 class ImageCrop {
   static const _channel =
-      const MethodChannel('plugins.lykhonis.com/image_crop');
+      const MethodChannel('plugins.marcin.wroblewscy.eu/image_crop_plus');
 
   static Future<bool> requestPermissions() => _channel
       .invokeMethod('requestPermissions')

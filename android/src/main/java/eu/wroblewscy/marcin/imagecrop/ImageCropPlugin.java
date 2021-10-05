@@ -1,4 +1,4 @@
-package com.lykhonis.imagecrop;
+package eu.wroblewscy.marcin.imagecrop;
 
 import android.app.Activity;
 import android.content.pm.PackageManager;
@@ -103,7 +103,7 @@ public final class ImageCropPlugin implements FlutterPlugin , ActivityAware, Met
     }
   
     private void setup(BinaryMessenger messenger) {
-        channel = new MethodChannel(messenger, "plugins.lykhonis.com/image_crop");
+        channel = new MethodChannel(messenger, "plugins.marcin.wroblewscy.eu/image_crop_plus");
         channel.setMethodCallHandler(this);
     }
 
@@ -201,17 +201,6 @@ public final class ImageCropPlugin implements FlutterPlugin , ActivityAware, Met
                                         (int) (srcBitmap.getHeight() * area.bottom));
                 Rect dstRect = new Rect(0, 0, width, height);
                 canvas.drawBitmap(srcBitmap, srcRect, dstRect, paint);
-
-                // TODO: Research a way to optimize rendering via matrix to reduce memory print.
-//                Matrix transformations = new Matrix();
-//                transformations.mapRect(new RectF(0, 0,
-//                                                  options.getWidth(), options.getHeight()));
-//                transformations.postTranslate(-options.getWidth() / 2f * area.left,
-//                                              -options.getHeight() / 2f * area.top);
-//                transformations.postRotate(options.getDegrees(),
-//                                           options.getWidth() / 2f * area.width(),
-//                                           options.getHeight() / 2f * area.height());
-//                canvas.drawBitmap(srcBitmap, transformations, paint);
 
                 try {
                     final File dstFile = createTemporaryImageFile();
@@ -393,7 +382,7 @@ public final class ImageCropPlugin implements FlutterPlugin , ActivityAware, Met
 
     private File createTemporaryImageFile() throws IOException {
         File directory = activity.getCacheDir();
-        String name = "image_crop_" + UUID.randomUUID().toString();
+        String name = "image_crop_plus_" + UUID.randomUUID().toString();
         return File.createTempFile(name, ".jpg", directory);
     }
 

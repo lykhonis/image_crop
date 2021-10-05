@@ -1,3 +1,8 @@
+## 0.5.0
+
+* adds top, right, bottom and left bars to crop grid
+* fixes issue for long lived Crop widgets ([PR #83](https://github.com/lykhonis/image_crop/pull/83))
+
 ## 0.4.0
 
 * adds null safety

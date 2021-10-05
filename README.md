@@ -13,7 +13,7 @@ All of the computation intensive work is done off a main thread via dispatch que
 *Note*: This plugin is still under development, some features are not available yet and testing has been limited.
 
 ## Installation
-Add `image_crop` [![image_crop](https://img.shields.io/pub/v/image_crop.svg)](https://pub.dartlang.org/packages/image_crop) as [a dependency in `pubspec.yaml`](https://flutter.io/using-packages/#managing-package-dependencies--versions).
+Add `image_crop_plus` [![image_crop_plus](https://img.shields.io/pub/v/image_crop_plus.svg)](https://pub.dartlang.org/packages/image_crop_plus) as [a dependency in `pubspec.yaml`](https://flutter.io/using-packages/#managing-package-dependencies--versions).
 
 ## Using
 Create a widget to load and edit an image:

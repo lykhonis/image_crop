@@ -1,5 +1,5 @@
-name: image_crop_example
-description: Demonstrates how to use the image_crop plugin.
+name: image_crop_plus_example
+description: Demonstrates how to use the image_crop_plus plugin.
 
 version: 1.0.0+1
 
@@ -17,7 +17,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  image_crop:
+  image_crop_plus:
     path: ../
 
 flutter:

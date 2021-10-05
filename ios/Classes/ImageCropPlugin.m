@@ -7,7 +7,7 @@
 
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar>*)registrar {
   FlutterMethodChannel* channel = [FlutterMethodChannel
-                                   methodChannelWithName:@"plugins.lykhonis.com/image_crop"
+                                   methodChannelWithName:@"plugins.marcin.wroblewscy.eu/image_crop_plus"
                                    binaryMessenger:[registrar messenger]];
   ImageCropPlugin* instance = [ImageCropPlugin new];
   [registrar addMethodCallDelegate:instance channel:channel];
@@ -250,7 +250,7 @@
 - (NSURL*)createTemporaryImageUrl {
     NSString* temproraryDirectory = NSTemporaryDirectory();
     NSString* guid = [[NSProcessInfo processInfo] globallyUniqueString];
-    NSString* sampleName = [[@"image_crop_" stringByAppendingString:guid] stringByAppendingString:@".jpg"];
+    NSString* sampleName = [[@"image_crop_plus_" stringByAppendingString:guid] stringByAppendingString:@".jpg"];
     NSString* samplePath = [temproraryDirectory stringByAppendingPathComponent:sampleName];
     return [NSURL fileURLWithPath:samplePath];
 }
