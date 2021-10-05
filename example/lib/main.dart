@@ -103,7 +103,7 @@ class _MyAppState extends State<MyApp> {
     final file = File(pickedFile.path);
     final sample = await ImageCrop.sampleImage(
       file: file,
-      preferredSize: context.size.longestSide.ceil(),
+      preferredSize: context.size.longestSide.toInt() * 2,
     );
 
     _sample?.delete();
