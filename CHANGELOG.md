@@ -1,3 +1,8 @@
+## 0.5.1
+
+* disable initial magnification ([PR #77](https://github.com/lykhonis/image_crop/pull/77))
+* fixes iOS build
+
 ## 0.5.0
 
 * adds top, right, bottom and left bars to crop grid
