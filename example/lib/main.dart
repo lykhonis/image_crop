@@ -58,7 +58,10 @@ class _MyAppState extends State<MyApp> {
     return Column(
       children: <Widget>[
         Expanded(
-          child: Crop.file(_sample, key: cropKey),
+          child: Crop.file(
+            _sample,
+            key: cropKey,
+          ),
         ),
         Container(
           padding: const EdgeInsets.only(top: 20.0),
@@ -95,7 +98,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _openImage() async {
-    final pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().getImage(source: ImageSource.gallery);
     final file = File(pickedFile.path);
     final sample = await ImageCrop.sampleImage(
       file: file,
