@@ -1,3 +1,7 @@
+## 0.5.2
+
+* update docs
+
 ## 0.5.1
 
 * disable initial magnification ([PR #77](https://github.com/lykhonis/image_crop/pull/77))

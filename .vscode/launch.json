@@ -9,6 +9,13 @@
             "request": "launch",
             "type": "dart",
             "program": "${workspaceFolder}/example/lib/main.dart"
+        },
+        {
+            "name": "Example (profile)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "program": "${workspaceFolder}/example/lib/main.dart"
         }
     ]
 }
