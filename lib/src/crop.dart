@@ -274,29 +274,29 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       return Rect.zero;
     }
 
+    final imageAspectRatio = imageWidth / imageHeight;
+    final widgetAspectRatio = widget.aspectRatio ?? imageAspectRatio;
     double height;
     double width;
-    if ((widget.aspectRatio ?? 1.0) < 1) {
+    if (widgetAspectRatio < 1) {
       height = 1.0;
-      width =
-          ((widget.aspectRatio ?? 1.0) * imageHeight * viewHeight * height) /
-              imageWidth /
-              viewWidth;
+      width = (widgetAspectRatio * imageHeight * viewHeight * height) /
+          imageWidth /
+          viewWidth;
       if (width > 1.0) {
         width = 1.0;
         height = (imageWidth * viewWidth * width) /
-            (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0));
+            (imageHeight * viewHeight * widgetAspectRatio);
       }
     } else {
       width = 1.0;
       height = (imageWidth * viewWidth * width) /
-          (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0));
+          (imageHeight * viewHeight * widgetAspectRatio);
       if (height > 1.0) {
         height = 1.0;
-        width =
-            ((widget.aspectRatio ?? 1.0) * imageHeight * viewHeight * height) /
-                imageWidth /
-                viewWidth;
+        width = (widgetAspectRatio * imageHeight * viewHeight * height) /
+            imageWidth /
+            viewWidth;
       }
     }
     final aspectRatio = _maxAreaWidthMap[widget.aspectRatio];
