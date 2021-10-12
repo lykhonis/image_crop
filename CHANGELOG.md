@@ -1,3 +1,7 @@
+## 0.6.1
+
+* changed animations to more "soft" or iOS-like
+
 ## 0.6.0
 
 * capture whole image by default if no aspect ratio specified
