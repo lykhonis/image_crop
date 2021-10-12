@@ -3,6 +3,7 @@ part of image_crop_plus;
 const _kCropGridColumnCount = 3;
 const _kCropGridRowCount = 3;
 const _kCropGridColor = Color.fromRGBO(0xd0, 0xd0, 0xd0, 0.9);
+const _kCropGridAnimationDuration = const Duration(milliseconds: 250);
 const _kCropOverlayActiveOpacity = 0.3;
 const _kCropOverlayInactiveOpacity = 0.7;
 const _kCropHandleColor = Color.fromRGBO(0xd0, 0xd0, 0xd0, 1.0);
@@ -12,6 +13,8 @@ const _kCropBarSize = const Size(15, 3);
 const _kCropHandleHitSize = 48.0;
 const _kCropMinFraction = 0.1;
 const _kOverlayColor = Color(0x0);
+const _kSettleAnimationDuration = const Duration(seconds: 1);
+const _kSettleAnimationCurve = Curves.fastLinearToSlowEaseIn;
 
 enum _CropAction { none, moving, cropping, scaling }
 enum _CropHandleSide {
@@ -214,8 +217,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   void _activate() {
     _activeController.animateTo(
       1.0,
-      curve: Curves.fastOutSlowIn,
-      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      duration: _kCropGridAnimationDuration,
     );
   }
 
@@ -223,8 +226,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     if (widget.alwaysShowGrid == false) {
       _activeController.animateTo(
         0.0,
-        curve: Curves.fastOutSlowIn,
-        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInCubic,
+        duration: _kCropGridAnimationDuration,
       );
     }
   }
@@ -500,8 +503,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     _settleController.value = 0.0;
     _settleController.animateTo(
       1.0,
-      curve: Curves.fastOutSlowIn,
-      duration: const Duration(milliseconds: 350),
+      curve: _kSettleAnimationCurve,
+      duration: _kSettleAnimationDuration,
     );
   }
 
