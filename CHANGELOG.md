@@ -1,3 +1,7 @@
+## 0.4.0
+
+* adds null safety
+
 ## 0.3.4
 
 * fixes several issues related to scaling and multi-touch support
