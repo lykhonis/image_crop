@@ -6,7 +6,7 @@ A flutter plugin to crop image on iOS and Android.
 
 The plugin comes with a `Crop` widget. The widget renders only image, overlay, and handles to crop an image. Thus it can be composed with other widgets to build custom image cropping experience. 
 
-The plugin is working with files to avoid passing large amount of data through method channels. Files are stored in cache folders of iOS and Android. Thus if there is a need to save actual croped image, ensure to copy the file to other location.
+The plugin is working with files to avoid passing large amount of data through method channels. Files are stored in cache folders of iOS and Android. Thus if there is a need to save actual cropped image, ensure to copy the file to other location.
 
 All of the computation intensive work is done off a main thread via dispatch queues on iOS and cache thread pool on Android.
 
@@ -47,16 +47,16 @@ if (area == null) {
     // ...
 }
 ```
-Accessing and workign with images. As a convenience function to request permissions to access photos.
+Accessing and working with images. As a convenience function to request permissions to access photos.
 ```dart
 final permissionsGranted = await ImageCrop.requestPermissions();
 ``` 
-Read image options, such as: width and height. This is efficent implementation that does not decode nor load actual image into a memory.
+Read image options, such as: width and height. This is efficient implementation that does not decode nor load actual image into a memory.
 ```dart
 final options = await getImageOptions(file: file);
 debugPrint('image width: ${options.width}, height: ${options.height}');
 ```
-If image is large to be loaded into the memory, there is a sampling function that relies on a native platform to proportionally scale down the image befor loading it to the memory. e.g. resample image to get down to `1024x4096` dimension as close as possible. If it is a square `preferredSize` can be used to specify both width and height. Prefer to leverage this functionality when displaying images in UI.
+If a large image is to be loaded into the memory, there is a sampling function that relies on a native platform to proportionally scale down the image before loading it to the memory. e.g. resample image to get down to `1024x4096` dimension as close as possible. If it is a square `preferredSize` can be used to specify both width and height. Prefer to leverage this functionality when displaying images in UI.
 ```dart
 final sampleFile = await ImageCrop.sampleImage(
     file: originalFile,
@@ -64,7 +64,7 @@ final sampleFile = await ImageCrop.sampleImage(
     preferredHeight: 4096,
 );
 ```
-Once `Crop` widget is ready, there is a native support of croping and scaling an image. In order to produce higher quality cropped image, rely on sampling image with preferred maximum width and height. Scale up a resolution of the sampled image. When cropped, the image is in higher resolution. Example is illustrated below:
+Once `Crop` widget is ready, there is a native support of cropping and scaling an image. In order to produce higher quality cropped image, rely on sampling image with preferred maximum width and height. Scale up a resolution of the sampled image. When cropped, the image is in higher resolution. Example is illustrated below:
 ```dart
 final sampledFile = await ImageCrop.sampleImage(
     file: originalFile,
