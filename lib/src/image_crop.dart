@@ -1,79 +1,78 @@
 part of image_crop;
 
+@immutable
 class ImageOptions {
-  final int width;
-  final int height;
-
-  ImageOptions({
+  const ImageOptions({
     required this.width,
     required this.height,
   });
+
+  final int width;
+  final int height;
 
   @override
   int get hashCode => hashValues(width, height);
 
   @override
-  bool operator ==(other) =>
+  bool operator ==(Object other) =>
       other is ImageOptions && other.width == width && other.height == height;
 
   @override
-  String toString() => '$runtimeType(width: $width, height: $height)';
+  String toString() => '$ImageOptions(width: $width, height: $height)';
 }
 
 class ImageCrop {
-  static const _channel =
-      const MethodChannel('plugins.lykhonis.com/image_crop');
+  static const _channel = MethodChannel('plugins.lykhonis.com/image_crop');
 
   static Future<bool> requestPermissions() => _channel
-      .invokeMethod('requestPermissions')
-      .then<bool>((result) => result);
+      .invokeMethod<bool>('requestPermissions')
+      .then((result) => result == true);
 
   static Future<ImageOptions> getImageOptions({
     required File file,
   }) async {
-    final result =
-        await _channel.invokeMethod('getImageOptions', {'path': file.path});
+    final result = await _channel
+        .invokeMethod<Map<String, int>>('getImageOptions', {'path': file.path});
 
     return ImageOptions(
-      width: result['width'],
-      height: result['height'],
+      width: result?['width'] ?? 0,
+      height: result?['height'] ?? 0,
     );
   }
 
-  static Future<File> cropImage({
+  static Future<File?> cropImage({
     required File file,
     required Rect area,
     double? scale,
   }) =>
-      _channel.invokeMethod('cropImage', {
+      _channel.invokeMethod<String>('cropImage', {
         'path': file.path,
         'left': area.left,
         'top': area.top,
         'right': area.right,
         'bottom': area.bottom,
         'scale': scale ?? 1.0,
-      }).then<File>((result) => File(result));
+      }).then((result) => result == null ? null : File(result));
 
-  static Future<File> sampleImage({
+  static Future<File?> sampleImage({
     required File file,
     int? preferredSize,
     int? preferredWidth,
     int? preferredHeight,
   }) async {
-    assert(() {
-      if (preferredSize == null &&
-          (preferredWidth == null || preferredHeight == null)) {
-        throw ArgumentError(
-            'Preferred size or both width and height of a resampled image must be specified.');
-      }
-      return true;
-    }());
+    assert(
+      preferredSize == null &&
+          (preferredWidth == null || preferredHeight == null),
+      'Preferred size or both width and height of a resampled image must be specified.',
+    );
 
-    final String path = await _channel.invokeMethod('sampleImage', {
+    final path = await _channel.invokeMethod<String>('sampleImage', {
       'path': file.path,
       'maximumWidth': preferredSize ?? preferredWidth,
       'maximumHeight': preferredSize ?? preferredHeight,
     });
+
+    if (path == null) return null;
 
     return File(path);
   }
