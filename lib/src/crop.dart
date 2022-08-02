@@ -21,6 +21,9 @@ class Crop extends StatefulWidget {
   final bool alwaysShowGrid;
   final ImageErrorListener? onImageError;
 
+  final double? fixedAreaWidth;
+  final double? fixedAreaHeight;
+
   const Crop({
     Key? key,
     required this.image,
@@ -28,6 +31,8 @@ class Crop extends StatefulWidget {
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
     this.onImageError,
+    this.fixedAreaWidth,
+    this.fixedAreaHeight,
   }) : super(key: key);
 
   Crop.file(
@@ -38,6 +43,8 @@ class Crop extends StatefulWidget {
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
     this.onImageError,
+    this.fixedAreaWidth,
+    this.fixedAreaHeight,
   })  : image = FileImage(file, scale: scale),
         super(key: key);
 
@@ -50,6 +57,8 @@ class Crop extends StatefulWidget {
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
     this.onImageError,
+    this.fixedAreaHeight,
+    this.fixedAreaWidth,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         super(key: key);
 
@@ -105,7 +114,17 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   @override
   void initState() {
     super.initState();
-
+    assert(() {  // check validity of area width and height
+      final fixedAreaWidth = widget.fixedAreaWidth ?? 1.0;
+      final fixedAreaHeight = widget.fixedAreaHeight ?? 1.0;
+      if (fixedAreaWidth <= 0 ||
+          fixedAreaHeight <= 0 ||
+          fixedAreaWidth > 1 ||
+          fixedAreaHeight > 1) {
+        throw ArgumentError('Fix crop box mush have width & height in (0, 1].');
+      }
+      return true;
+    }());
     _activeController = AnimationController(
       vsync: this,
       value: widget.alwaysShowGrid ? 1.0 : 0.0,
@@ -264,34 +283,37 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
 
     double height;
     double width;
+
     if ((widget.aspectRatio ?? 1.0) < 1) {
-      height = 1.0;
-      width =
-          ((widget.aspectRatio ?? 1.0) * imageHeight * viewHeight * height) /
+      height = (widget.fixedAreaHeight ?? 1.0);
+      width = widget.fixedAreaWidth ??
+          (((widget.aspectRatio ?? 1.0) * imageHeight * viewHeight * height) /
               imageWidth /
-              viewWidth;
+              viewWidth);
       if (width > 1.0) {
-        width = 1.0;
-        height = (imageWidth * viewWidth * width) /
-            (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0));
+        width = (widget.fixedAreaWidth ?? 1.0);
+        height = widget.fixedAreaHeight ??
+            ((imageWidth * viewWidth * width) /
+                (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0)));
       }
     } else {
-      width = 1.0;
-      height = (imageWidth * viewWidth * width) /
-          (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0));
+      width = (widget.fixedAreaWidth ?? 1.0);
+      height = widget.fixedAreaHeight ??
+          ((imageWidth * viewWidth * width) /
+              (imageHeight * viewHeight * (widget.aspectRatio ?? 1.0)));
       if (height > 1.0) {
-        height = 1.0;
-        width =
-            ((widget.aspectRatio ?? 1.0) * imageHeight * viewHeight * height) /
+        height = (widget.fixedAreaHeight ?? 1.0);
+        width = widget.fixedAreaWidth ??
+            (((widget.aspectRatio ?? 1.0) * imageHeight * viewHeight * height) /
                 imageWidth /
-                viewWidth;
+                viewWidth);
       }
     }
+
     final aspectRatio = _maxAreaWidthMap[widget.aspectRatio];
     if (aspectRatio != null) {
       _maxAreaWidthMap[aspectRatio] = width;
     }
-
     return Rect.fromLTWH((1.0 - width) / 2, (1.0 - height) / 2, width, height);
   }
 
@@ -552,6 +574,10 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     }
 
     if (_action == _CropAction.cropping) {
+      if (widget.fixedAreaWidth != null || widget.fixedAreaHeight != null) {
+        return; // ignore cropping action if area is suppose to be fixed
+      }
+
       final boundaries = _boundaries;
       if (boundaries == null) {
         return;
