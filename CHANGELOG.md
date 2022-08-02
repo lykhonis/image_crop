@@ -1,3 +1,11 @@
+## 0.4.1
+
+Community Contributions. Thank you!
+
+* Dart 2.17 #89 (#91)
+* Fixed a few typos (#87)
+* Resolve #40 (#81)
+
 ## 0.4.0
 
 * adds null safety
