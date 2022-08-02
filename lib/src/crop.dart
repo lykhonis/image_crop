@@ -20,6 +20,7 @@ class Crop extends StatefulWidget {
   final double maximumScale;
   final bool alwaysShowGrid;
   final ImageErrorListener? onImageError;
+  final bool flip;
 
   const Crop({
     Key? key,
@@ -28,6 +29,7 @@ class Crop extends StatefulWidget {
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
     this.onImageError,
+    this.flip = false,
   }) : super(key: key);
 
   Crop.file(
@@ -38,6 +40,7 @@ class Crop extends StatefulWidget {
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
     this.onImageError,
+    this.flip = false,
   })  : image = FileImage(file, scale: scale),
         super(key: key);
 
@@ -50,6 +53,7 @@ class Crop extends StatefulWidget {
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
     this.onImageError,
+    this.flip = false,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         super(key: key);
 
@@ -73,6 +77,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   Offset _lastFocalPoint = Offset.zero;
   _CropAction _action = _CropAction.none;
   _CropHandleSide _handle = _CropHandleSide.none;
+  bool flip = false;
 
   late double _startScale;
   late Rect _startView;
@@ -112,6 +117,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     )..addListener(() => setState(() {}));
     _settleController = AnimationController(vsync: this)
       ..addListener(_settleAnimationChanged);
+    flip = widget.flip;
   }
 
   @override
@@ -137,6 +143,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   void didUpdateWidget(Crop oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    flip = widget.flip;
+    debugPrint('didUpdateWidget flip: $flip');
     if (widget.image != oldWidget.image) {
       _getImage();
     } else if (widget.aspectRatio != oldWidget.aspectRatio) {
@@ -185,14 +193,18 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
             onScaleStart: _isEnabled ? _handleScaleStart : null,
             onScaleUpdate: _isEnabled ? _handleScaleUpdate : null,
             onScaleEnd: _isEnabled ? _handleScaleEnd : null,
-            child: CustomPaint(
-              painter: _CropPainter(
-                image: _image,
-                ratio: _ratio,
-                view: _view,
-                area: _area,
-                scale: _scale,
-                active: _activeController.value,
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.rotationY(flip ? pi : 0),
+              child: CustomPaint(
+                painter: _CropPainter(
+                  image: _image,
+                  ratio: _ratio,
+                  view: _view,
+                  area: _area,
+                  scale: _scale,
+                  active: _activeController.value,
+                ),
               ),
             ),
           ),
