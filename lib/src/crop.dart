@@ -79,11 +79,14 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
   late Tween<Rect?> _viewTween;
   late Tween<double> _scaleTween;
 
+
+
   ImageStream? _imageStream;
   ui.Image? _image;
   ImageStreamListener? _imageListener;
 
   double get scale => _area.shortestSide / _scale;
+  Rect get rawArea => _area;
 
   Rect? get area => _view.isEmpty
       ? null
@@ -93,6 +96,9 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
           _area.width * _view.width / _scale,
           _area.height * _view.height / _scale,
         );
+
+  List? get rawCropAreaCoords => _area.isEmpty ? null : [_area.top, _area.width, _area.height];
+  List? get cropAreaCoords => _view.isEmpty ? null : [this.area?.top, this.area?.width, this.area?.height];
 
   bool get _isEnabled => _view.isEmpty == false && _image != null;
 
@@ -794,3 +800,4 @@ class _CropPainter extends CustomPainter {
     canvas.drawPath(path, paint);
   }
 }
+

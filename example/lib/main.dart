@@ -6,6 +6,9 @@ import 'package:flutter/services.dart';
 import 'package:image_crop/image_crop.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+
 void main() {
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -35,7 +38,13 @@ class _MyAppState extends State<MyApp> {
     _sample?.delete();
     _lastCropped?.delete();
   }
+  Future<String> getFilePath() async {
+    Directory appDocumentsDirectory = await getApplicationDocumentsDirectory(); // 1
+    String appDocumentsPath = appDocumentsDirectory.path; // 2
+    String filePath = '$appDocumentsPath/demoTextFile.txt'; // 3
 
+    return filePath;
+  }
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -126,10 +135,47 @@ class _MyAppState extends State<MyApp> {
       preferredSize: (2000 / scale).round(),
     );
 
-    final file = await ImageCrop.cropImage(
+
+    final file = await ImageCrop.cropImageRestricted(
       file: sample,
       area: area,
+      exact: true,
+      preferredHeight: 800,
+      preferredWidth: 600
     );
+
+    //restricted crop height and width
+    debugPrint("Restricted crop: ");
+    debugPrint(ImageCrop.getImageOptions(file: file).toString());
+
+
+    final file2 = await ImageCrop.cropImage(
+        file: sample,
+        area: area,
+    );
+    //unrestricted crop height and width
+    debugPrint("Unrestricted crop: ");
+    debugPrint(ImageCrop.getImageOptions(file: file2).toString());
+
+
+    var rawCoords = cropKey.currentState.rawCropAreaCoords;
+    if(rawCoords != null){
+      debugPrint("crop area raw coordinates: \n" + "\t top left: " + rawCoords[0].toString()
+          + "\n\t width: " + rawCoords[1].toString()
+          + "\n\t height: " + rawCoords[2].toString());
+    }else{
+      debugPrint("no area specified");
+    }
+
+    var coords = cropKey.currentState.cropAreaCoords;
+    if(coords != null) {
+      debugPrint(
+          "crop area relative coordinates: \n" + "\t top left: " + coords[0].toString()
+              + "\n\t width: " + coords[1].toString()
+              + "\n\t height: " + coords[2].toString());
+    }else{
+      debugPrint("no area specified");
+    }
 
     sample.delete();
 
@@ -137,5 +183,10 @@ class _MyAppState extends State<MyApp> {
     _lastCropped = file;
 
     debugPrint('$file');
+
+
+
+
   }
 }
+
