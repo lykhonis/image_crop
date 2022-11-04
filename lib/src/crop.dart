@@ -11,6 +11,7 @@ const _kCropHandleHitSize = 48.0;
 const _kCropMinFraction = 0.1;
 
 enum _CropAction { none, moving, cropping, scaling }
+
 enum _CropHandleSide { none, topLeft, topRight, bottomLeft, bottomRight }
 
 class Crop extends StatefulWidget {
@@ -305,7 +306,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       return;
     }
 
-    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       final image = imageInfo.image;
 
       setState(() {
@@ -333,7 +334,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       });
     });
 
-    WidgetsBinding.instance?.ensureVisualUpdate();
+    WidgetsBinding.instance.ensureVisualUpdate();
   }
 
   _CropHandleSide _hitCropHandle(Offset? localPoint) {
