@@ -19,6 +19,11 @@ class Crop extends StatefulWidget {
   final double? aspectRatio;
   final double maximumScale;
   final bool alwaysShowGrid;
+
+  /// Set [disableResize] to `true` in order to hide corner handlers
+  ///
+  /// Defaults to `false`
+  final bool disableResize;
   final ImageErrorListener? onImageError;
 
   const Crop({
@@ -27,6 +32,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
+    this.disableResize = false,
     this.onImageError,
   }) : super(key: key);
 
@@ -37,6 +43,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
+    this.disableResize = false,
     this.onImageError,
   })  : image = FileImage(file, scale: scale),
         super(key: key);
@@ -49,6 +56,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
+    this.disableResize = false,
     this.onImageError,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         super(key: key);
@@ -193,6 +201,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
                 area: _area,
                 scale: _scale,
                 active: _activeController.value,
+                disableResize: widget.disableResize,
               ),
             ),
           ),
@@ -344,6 +353,10 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       boundaries.width * _area.width,
       boundaries.height * _area.height,
     ).deflate(_kCropHandleSize / 2);
+
+    if (widget.disableResize) {
+      return _CropHandleSide.none;
+    }
 
     if (Rect.fromLTWH(
       viewRect.left - _kCropHandleHitSize / 2,
@@ -625,6 +638,7 @@ class _CropPainter extends CustomPainter {
   final Rect area;
   final double scale;
   final double active;
+  final bool disableResize;
 
   _CropPainter({
     required this.image,
@@ -633,6 +647,7 @@ class _CropPainter extends CustomPainter {
     required this.area,
     required this.scale,
     required this.active,
+    required this.disableResize,
   });
 
   @override
@@ -715,6 +730,9 @@ class _CropPainter extends CustomPainter {
     final paint = Paint()
       ..isAntiAlias = true
       ..color = _kCropHandleColor;
+
+    // do not show handles if cannot be resized
+    if (disableResize) return;
 
     canvas.drawOval(
       Rect.fromLTWH(
