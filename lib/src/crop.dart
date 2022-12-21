@@ -24,6 +24,9 @@ class Crop extends StatefulWidget {
   /// Specifies [placeholderWidget] to display a [Widget] while the image is loading
   final Widget? placeholderWidget;
 
+  /// Function called when the image or the view is recomputed
+  final Function(bool isReady)? onLoading;
+
   const Crop({
     Key? key,
     required this.image,
@@ -32,6 +35,7 @@ class Crop extends StatefulWidget {
     this.alwaysShowGrid = false,
     this.onImageError,
     this.placeholderWidget,
+    this.onLoading,
   }) : super(key: key);
 
   Crop.file(
@@ -43,6 +47,7 @@ class Crop extends StatefulWidget {
     this.alwaysShowGrid = false,
     this.onImageError,
     this.placeholderWidget,
+    this.onLoading,
   })  : image = FileImage(file, scale: scale),
         super(key: key);
 
@@ -56,6 +61,7 @@ class Crop extends StatefulWidget {
     this.alwaysShowGrid = false,
     this.onImageError,
     this.placeholderWidget,
+    this.onLoading,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         super(key: key);
 
@@ -162,7 +168,14 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
     }
   }
 
+  void _onLoading(bool isLoading) {
+    if (widget.onLoading != null) {
+      widget.onLoading!(isLoading);
+    }
+  }
+
   void _getImage() {
+    _onLoading(false);
     widget.image.evict();
     final oldImageStream = _imageStream;
     final newImageStream =
@@ -335,6 +348,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
           viewWidth,
           viewHeight,
         );
+        _onLoading(true);
       });
     });
 
