@@ -6,7 +6,6 @@ const _kCropGridColor = Color.fromRGBO(0xd0, 0xd0, 0xd0, 0.9);
 const _kCropOverlayActiveOpacity = 0.3;
 const _kCropOverlayInactiveOpacity = 0.7;
 const _kCropHandleColor = Color.fromRGBO(0xd0, 0xd0, 0xd0, 1.0);
-const _kCropHandleSize = 10.0;
 const _kCropHandleHitSize = 48.0;
 const _kCropMinFraction = 0.1;
 
@@ -19,6 +18,11 @@ class Crop extends StatefulWidget {
   final double? aspectRatio;
   final double maximumScale;
   final bool alwaysShowGrid;
+
+  /// Set [disableResize] to `true` in order to hide corner handlers
+  ///
+  /// Defaults to `false`
+  final bool disableResize;
   final ImageErrorListener? onImageError;
 
   const Crop({
@@ -27,6 +31,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
+    this.disableResize = false,
     this.onImageError,
   }) : super(key: key);
 
@@ -37,6 +42,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
+    this.disableResize = false,
     this.onImageError,
   })  : image = FileImage(file, scale: scale),
         super(key: key);
@@ -49,6 +55,7 @@ class Crop extends StatefulWidget {
     this.aspectRatio,
     this.maximumScale = 2.0,
     this.alwaysShowGrid = false,
+    this.disableResize = false,
     this.onImageError,
   })  : image = AssetImage(assetName, bundle: bundle, package: package),
         super(key: key);
@@ -95,6 +102,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
         );
 
   bool get _isEnabled => _view.isEmpty == false && _image != null;
+
+  double get cropHandleSize => widget.disableResize ? 0.0 : 10.0;
 
   // Saving the length for the widest area for different aspectRatio's
   final Map<double, double> _maxAreaWidthMap = {};
@@ -193,6 +202,8 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
                 area: _area,
                 scale: _scale,
                 active: _activeController.value,
+                disableResize: widget.disableResize,
+                cropHandleSize: cropHandleSize,
               ),
             ),
           ),
@@ -228,7 +239,7 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       return null;
     }
 
-    return size - const Offset(_kCropHandleSize, _kCropHandleSize) as Size;
+    return size - Offset(cropHandleSize, cropHandleSize) as Size;
   }
 
   Offset? _getLocalPoint(Offset point) {
@@ -343,7 +354,11 @@ class CropState extends State<Crop> with TickerProviderStateMixin, Drag {
       boundaries.height * _area.top,
       boundaries.width * _area.width,
       boundaries.height * _area.height,
-    ).deflate(_kCropHandleSize / 2);
+    ).deflate(cropHandleSize / 2);
+
+    if (widget.disableResize) {
+      return _CropHandleSide.none;
+    }
 
     if (Rect.fromLTWH(
       viewRect.left - _kCropHandleHitSize / 2,
@@ -625,6 +640,8 @@ class _CropPainter extends CustomPainter {
   final Rect area;
   final double scale;
   final double active;
+  final bool disableResize;
+  final double cropHandleSize;
 
   _CropPainter({
     required this.image,
@@ -633,6 +650,8 @@ class _CropPainter extends CustomPainter {
     required this.area,
     required this.scale,
     required this.active,
+    required this.disableResize,
+    required this.cropHandleSize,
   });
 
   @override
@@ -648,10 +667,10 @@ class _CropPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Rect.fromLTWH(
-      _kCropHandleSize / 2,
-      _kCropHandleSize / 2,
-      size.width - _kCropHandleSize,
-      size.height - _kCropHandleSize,
+      cropHandleSize / 2,
+      cropHandleSize / 2,
+      size.width - cropHandleSize,
+      size.height - cropHandleSize,
     );
 
     canvas.save();
@@ -716,42 +735,45 @@ class _CropPainter extends CustomPainter {
       ..isAntiAlias = true
       ..color = _kCropHandleColor;
 
+    // do not show handles if cannot be resized
+    if (disableResize) return;
+
     canvas.drawOval(
       Rect.fromLTWH(
-        boundaries.left - _kCropHandleSize / 2,
-        boundaries.top - _kCropHandleSize / 2,
-        _kCropHandleSize,
-        _kCropHandleSize,
+        boundaries.left - cropHandleSize / 2,
+        boundaries.top - cropHandleSize / 2,
+        cropHandleSize,
+        cropHandleSize,
       ),
       paint,
     );
 
     canvas.drawOval(
       Rect.fromLTWH(
-        boundaries.right - _kCropHandleSize / 2,
-        boundaries.top - _kCropHandleSize / 2,
-        _kCropHandleSize,
-        _kCropHandleSize,
+        boundaries.right - cropHandleSize / 2,
+        boundaries.top - cropHandleSize / 2,
+        cropHandleSize,
+        cropHandleSize,
       ),
       paint,
     );
 
     canvas.drawOval(
       Rect.fromLTWH(
-        boundaries.right - _kCropHandleSize / 2,
-        boundaries.bottom - _kCropHandleSize / 2,
-        _kCropHandleSize,
-        _kCropHandleSize,
+        boundaries.right - cropHandleSize / 2,
+        boundaries.bottom - cropHandleSize / 2,
+        cropHandleSize,
+        cropHandleSize,
       ),
       paint,
     );
 
     canvas.drawOval(
       Rect.fromLTWH(
-        boundaries.left - _kCropHandleSize / 2,
-        boundaries.bottom - _kCropHandleSize / 2,
-        _kCropHandleSize,
-        _kCropHandleSize,
+        boundaries.left - cropHandleSize / 2,
+        boundaries.bottom - cropHandleSize / 2,
+        cropHandleSize,
+        cropHandleSize,
       ),
       paint,
     );
