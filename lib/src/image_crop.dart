@@ -11,7 +11,7 @@ class ImageOptions {
   final int height;
 
   @override
-  int get hashCode => hashValues(width, height);
+  int get hashCode => Object.hash(width, height);
 
   @override
   bool operator ==(Object other) =>
