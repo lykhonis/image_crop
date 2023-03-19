@@ -1,24 +1,26 @@
 name: image_crop_example
 description: Demonstrates how to use the image_crop plugin.
+publish_to: none
 
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.0.0-dev.68.0 <3.0.0"
+  sdk: ">=2.17.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^0.1.3
-  image_picker: ^0.7.4
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
+  image_picker: ^0.8.7
+  path_provider: ^2.0.13
 
   image_crop:
     path: ../
+
+dev_dependencies:
+  flutter_lints: ^2.0.1
+  flutter_test:
+    sdk: flutter
 
 flutter:
   uses-material-design: true
