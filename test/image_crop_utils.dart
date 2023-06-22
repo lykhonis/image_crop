@@ -167,6 +167,9 @@ class _TestImage implements ui.Image {
     ui.ImageByteFormat format = ui.ImageByteFormat.rawRgba,
   }) async =>
       null;
+
+  @override
+  ui.ColorSpace get colorSpace => ui.ColorSpace.sRGB;
 }
 
 class _TestImageProvider implements ImageProvider<_TestImageProvider> {
@@ -220,6 +223,12 @@ class _TestImageProvider implements ImageProvider<_TestImageProvider> {
   }
 
   @override
+  ImageStreamCompleter loadImage(
+      _TestImageProvider key, ImageDecoderCallback decode) {
+    return OneFrameImageStreamCompleter(_loadImage());
+  }
+
+  @override
   // ignore: deprecated_member_use
   ImageStreamCompleter load(_TestImageProvider key, DecoderCallback decode) {
     throw UnimplementedError();
@@ -227,6 +236,7 @@ class _TestImageProvider implements ImageProvider<_TestImageProvider> {
 
   @override
   ImageStreamCompleter loadBuffer(
+      // ignore: deprecated_member_use
       _TestImageProvider key, DecoderBufferCallback decode) {
     throw UnimplementedError();
   }

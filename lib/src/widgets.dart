@@ -1,6 +1,5 @@
 import 'dart:ui' as ui;
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 import 'button.dart';
@@ -65,7 +64,7 @@ class CropCanvas extends StatefulWidget {
 }
 
 class _CropCanvasState extends State<CropCanvas>
-    with TickerProviderStateMixin, Drag {
+    with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
