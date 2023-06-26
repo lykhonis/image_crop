@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,18 +14,11 @@ void main() async {
       const vp = Rect.fromLTWH(0, 0, 300, 400);
       const target = TargetSize(100, 150);
 
-      void expectSnapshot(Image img) async {
-        expect(img.width, target.width, reason: 'Wrong width');
-        expect(img.height, target.height, reason: 'Wrong height');
-
-        final result = await img.toByteData(format: ImageByteFormat.png).then(
-              (data) => data!.buffer.asUint8List(),
-            );
-
+      void expectSnapshot(MemoryImage img) async {
         final expected =
             await File('./test/crop-expected_100x150.png').readAsBytes();
 
-        expect(result, expected);
+        expect(img.bytes, expected);
       }
 
       TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,7 +32,7 @@ void main() async {
       increaseCropAreaBy(ctrl, 500);
       moveImageBy(ctrl, const Offset(100, 210));
 
-      await ctrl.crop();
+      await ctrl.crop(1);
     },
   );
 }

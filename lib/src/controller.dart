@@ -16,12 +16,12 @@ enum _CropAction { move, resizeCropArea, scale }
 enum CropHandle { topLeft, bottomRight }
 
 typedef OnCropError = void Function(ImageCropError);
-typedef OnCropDone = FutureOr<void> Function(ui.Image);
+typedef OnCropDone = FutureOr<void> Function(MemoryImage);
 
 class CropController extends ChangeNotifier {
   final ImageProvider imageProvider;
   final TargetSize target;
-  final bool alwaysShowGrid;
+  double _maximumScale;
 
   final OnCropDone onDone;
   final OnCropError onError;
@@ -29,6 +29,8 @@ class CropController extends ChangeNotifier {
   ButtonStateNotifier? _submitBtnState;
 
   AnimationController? _activeAnimation;
+
+  final bool alwaysShowGrid;
 
   AnimationController? get activeAnimation => _activeAnimation;
 
@@ -43,7 +45,6 @@ class CropController extends ChangeNotifier {
       _submitBtnState ??= ButtonStateNotifier();
 
   Rect? _viewport;
-  double _maximumScale;
   Rect _cropArea = Rect.zero;
   Rect _imageView = Rect.zero;
   double _scale = 1;
@@ -88,7 +89,7 @@ class CropController extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> crop() async {
+  Future<void> crop(double pixelRatio) async {
     final vp = _viewport;
     final image = _image;
     if (image == null || vp == null) {
@@ -108,7 +109,7 @@ class CropController extends ChangeNotifier {
 
       final offset = Offset.zero - _cropArea.topLeft;
       Canvas(recorder, vp)
-        ..scale(1 / target.scaleFactor(_cropArea))
+        ..scale(pixelRatio / target.scaleFactor(_cropArea))
         ..translate(offset.dx, offset.dy)
         ..drawImageRect(
           image,
@@ -117,9 +118,31 @@ class CropController extends ChangeNotifier {
           ui.Paint()..isAntiAlias = false,
         );
 
-      await onDone(
-        await recorder.endRecording().toImage(target.width, target.height),
-      );
+      final picture = recorder.endRecording();
+      try {
+        final image = await picture.toImage(
+          (target.width * pixelRatio).toInt(),
+          (target.height * pixelRatio).toInt(),
+        );
+        try {
+          final data = await image.toByteData(format: ui.ImageByteFormat.png);
+          if (data == null) {
+            onError(ImageCropError.noData());
+            return;
+          }
+          await onDone(
+            MemoryImage(data.buffer.asUint8List(), scale: pixelRatio),
+          );
+        } catch (e, st) {
+          onError(ImageCropError.imageDecode(e, st));
+        } finally {
+          image.dispose();
+        }
+      } catch (e, st) {
+        onError(ImageCropError.pictureToImage(e, st));
+      } finally {
+        picture.dispose();
+      }
     } catch (e, st) {
       onError(ImageCropError.resize(e, st));
     } finally {
@@ -247,10 +270,6 @@ class CropController extends ChangeNotifier {
   }
 
   void handleScaleEnd(ScaleEndDetails details) {
-    hideGrid();
-  }
-
-  void hideGrid() {
     if (alwaysShowGrid == false) {
       _activeAnimation?.animateTo(
         0.0,
@@ -307,7 +326,6 @@ class CropController extends ChangeNotifier {
     }
 
     final boundaries = _cropArea;
-
     var dx = 0.0;
     var dy = 0.0;
 

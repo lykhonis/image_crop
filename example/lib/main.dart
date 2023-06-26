@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -53,13 +52,11 @@ class _Screen extends StatefulWidget {
 
 class _ScreenState extends State<_Screen> {
   CropController? _ctrl;
-  bool _showImage = false;
-  late Image _dest;
+  MemoryImage? _image;
 
   @override
   void initState() {
     super.initState();
-    _dest = Image.file(File(widget.destPath));
   }
 
   @override
@@ -81,7 +78,8 @@ class _ScreenState extends State<_Screen> {
       );
     }
 
-    if (_showImage) {
+    final image = _image;
+    if (image != null) {
       const spacer = SizedBox(height: 10);
       return Column(
         children: [
@@ -89,13 +87,13 @@ class _ScreenState extends State<_Screen> {
             decoration: BoxDecoration(
               border: Border.all(color: Colors.black, width: 5),
             ),
-            child: _dest,
+            child: Image(image: image),
           ),
           spacer,
           ElevatedButton(
             onPressed: () {
               setState(() {
-                _showImage = false;
+                _image = null;
               });
             },
             child: const Text('Crop again'),
@@ -109,7 +107,10 @@ class _ScreenState extends State<_Screen> {
       );
     }
 
-    return ImageCropper(ctrl);
+    return ImageCropper(
+      ctrl,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+    );
   }
 
   void _pickImage() async {
@@ -133,14 +134,10 @@ class _ScreenState extends State<_Screen> {
     });
   }
 
-  void _onDone(ui.Image img) async {
-    final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
-    await File(widget.destPath).writeAsBytes(byteData!.buffer.asUint8List());
-
+  void _onDone(MemoryImage img) async {
     if (mounted) {
-      PaintingBinding.instance.imageCache.clear();
       setState(() {
-        _showImage = true;
+        _image = img;
       });
     }
   }

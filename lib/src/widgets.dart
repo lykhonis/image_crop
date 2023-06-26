@@ -8,8 +8,11 @@ import 'controller.dart';
 
 class ImageCropper extends StatelessWidget {
   final CropController ctrl;
+  /// Scale image based on device pixel ratio for best quality.
+  /// Fix this value to 1 if you always want to have an exact size.
+  final double devicePixelRatio;
 
-  const ImageCropper(this.ctrl, {super.key});
+  const ImageCropper(this.ctrl, {super.key, required this.devicePixelRatio});
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +25,17 @@ class ImageCropper extends StatelessWidget {
           child: Container(
             margin: const EdgeInsets.only(bottom: 15),
             child: ConfirmButton(
-              submit: ctrl.crop,
+              submit: _crop,
               state: ctrl.submitBtnState,
             ),
           ),
         ),
       ],
     );
+  }
+
+  void _crop() {
+    ctrl.crop(devicePixelRatio);
   }
 }
 
@@ -63,8 +70,7 @@ class CropCanvas extends StatefulWidget {
   }
 }
 
-class _CropCanvasState extends State<CropCanvas>
-    with TickerProviderStateMixin {
+class _CropCanvasState extends State<CropCanvas> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
