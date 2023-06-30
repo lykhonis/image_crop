@@ -1,141 +1,152 @@
 import 'dart:io';
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_crop/image_crop.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
-void main() {
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+void main() async {
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarBrightness: Brightness.dark,
     statusBarIconBrightness: Brightness.light,
     systemNavigationBarIconBrightness: Brightness.light,
   ));
 
-  runApp(new MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final dir = await getTemporaryDirectory();
+  runApp(MyApp('${dir.path}/crop-result.png'));
 }
 
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => new _MyAppState();
-}
+class MyApp extends StatelessWidget {
+  final String destPath;
 
-class _MyAppState extends State<MyApp> {
-  final cropKey = GlobalKey<CropState>();
-  File _file;
-  File _sample;
-  File _lastCropped;
-
-  @override
-  void dispose() {
-    super.dispose();
-    _file?.delete();
-    _sample?.delete();
-    _lastCropped?.delete();
-  }
+  const MyApp(this.destPath, {super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SafeArea(
-        child: Container(
-          color: Colors.black,
+      home: Scaffold(
+        body: Container(
           padding: const EdgeInsets.symmetric(vertical: 40.0, horizontal: 20.0),
-          child: _sample == null ? _buildOpeningImage() : _buildCroppingImage(),
+          child: Center(child: _Screen(destPath)),
         ),
       ),
     );
   }
+}
 
-  Widget _buildOpeningImage() {
-    return Center(child: _buildOpenImage());
+class _Screen extends StatefulWidget {
+  final String destPath;
+
+  const _Screen(this.destPath);
+
+  @override
+  State<StatefulWidget> createState() {
+    return _ScreenState();
+  }
+}
+
+class _ScreenState extends State<_Screen> {
+  CropController? _ctrl;
+  MemoryImage? _image;
+
+  @override
+  void initState() {
+    super.initState();
   }
 
-  Widget _buildCroppingImage() {
-    return Column(
-      children: <Widget>[
-        Expanded(
-          child: Crop.file(_sample, key: cropKey),
+  @override
+  void dispose() {
+    _ctrl?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctrl = _ctrl;
+    if (ctrl == null) {
+      return Center(
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(15)),
+          onPressed: _pickImage,
+          child: const Text('Pick image', style: TextStyle(fontSize: 24)),
         ),
-        Container(
-          padding: const EdgeInsets.only(top: 20.0),
-          alignment: AlignmentDirectional.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
-              TextButton(
-                child: Text(
-                  'Crop Image',
-                  style: Theme.of(context)
-                      .textTheme
-                      .button
-                      .copyWith(color: Colors.white),
-                ),
-                onPressed: () => _cropImage(),
-              ),
-              _buildOpenImage(),
-            ],
+      );
+    }
+
+    final image = _image;
+    if (image != null) {
+      const spacer = SizedBox(height: 10);
+      return Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black, width: 5),
+            ),
+            child: Image(image: image),
           ),
-        )
-      ],
+          spacer,
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _image = null;
+              });
+            },
+            child: const Text('Crop again'),
+          ),
+          spacer,
+          ElevatedButton(
+            onPressed: _pickImage,
+            child: const Text('Pick image'),
+          ),
+        ],
+      );
+    }
+
+    return ImageCropper(
+      ctrl,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
     );
   }
 
-  Widget _buildOpenImage() {
-    return TextButton(
-      child: Text(
-        'Open Image',
-        style: Theme.of(context).textTheme.button.copyWith(color: Colors.white),
-      ),
-      onPressed: () => _openImage(),
-    );
-  }
+  void _pickImage() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
 
-  Future<void> _openImage() async {
-    final pickedFile = await ImagePicker().getImage(source: ImageSource.gallery);
-    final file = File(pickedFile.path);
-    final sample = await ImageCrop.sampleImage(
-      file: file,
-      preferredSize: context.size.longestSide.ceil(),
-    );
-
-    _sample?.delete();
-    _file?.delete();
-
-    setState(() {
-      _sample = sample;
-      _file = file;
-    });
-  }
-
-  Future<void> _cropImage() async {
-    final scale = cropKey.currentState.scale;
-    final area = cropKey.currentState.area;
-    if (area == null) {
-      // cannot crop, widget is not setup
+    if (!mounted || pickedFile == null) {
       return;
     }
 
-    // scale up to use maximum possible number of pixels
-    // this will sample image in higher resolution to make cropped image larger
-    final sample = await ImageCrop.sampleImage(
-      file: _file,
-      preferredSize: (2000 / scale).round(),
-    );
+    setState(() {
+      final source = FileImage(File(pickedFile.path));
+      _ctrl?.dispose();
+      _ctrl = CropController(
+        imageProvider: source,
+        target: const TargetSize(160, 90),
+        maximumScale: 4,
+        onDone: _onDone,
+        onError: _onError,
+      );
+    });
+  }
 
-    final file = await ImageCrop.cropImage(
-      file: sample,
-      area: area,
-    );
+  void _onDone(MemoryImage img) async {
+    if (mounted) {
+      setState(() {
+        _image = img;
+      });
+    }
+  }
 
-    sample.delete();
-
-    _lastCropped?.delete();
-    _lastCropped = file;
-
-    debugPrint('$file');
+  void _onError(ImageCropError e) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('Something went wrong:\n$e'),
+      showCloseIcon: true,
+      duration: const Duration(seconds: 5),
+    ));
   }
 }

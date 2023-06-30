@@ -1,11 +1,11 @@
 name: image_crop
-description: A flutter plugin to crop image on iOS and Android. It processes image files off main thread natively. The plugin provides a Crop widget to display image cropping to a user.
-version: 0.4.1
-homepage: https://github.com/VolodymyrLykhonis/image_crop
+description: A flutter plugin to crop image. It processes image using the native Canvas API. This plugin provides a Crop widget to display image cropping to a user.
+version: 5.0.0
+homepage: https://github.com/lykhonis/image_crop
 
 environment:
   sdk: ">=2.17.0 <3.0.0"
-  flutter: ">=2.5.0"
+  flutter: ">=3.5.0"
 
 dependencies:
   flutter:
@@ -14,12 +14,4 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-flutter:
-  plugin:
-    platforms:
-      android:
-        package: com.lykhonis.imagecrop
-        pluginClass: ImageCropPlugin
-      ios:
-        pluginClass: ImageCropPlugin
+  test: ^1.22.0
