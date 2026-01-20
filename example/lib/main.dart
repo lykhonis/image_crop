@@ -24,9 +24,9 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final cropKey = GlobalKey<CropState>();
-  File _file;
-  File _sample;
-  File _lastCropped;
+  late File _file;
+  late File _sample;
+  late File _lastCropped;
 
   @override
   void dispose() {
@@ -71,8 +71,8 @@ class _MyAppState extends State<MyApp> {
                   'Crop Image',
                   style: Theme.of(context)
                       .textTheme
-                      .button
-                      .copyWith(color: Colors.white),
+                      .labelLarge
+                      ?.copyWith(color: Colors.white),
                 ),
                 onPressed: () => _cropImage(),
               ),
@@ -88,7 +88,7 @@ class _MyAppState extends State<MyApp> {
     return TextButton(
       child: Text(
         'Open Image',
-        style: Theme.of(context).textTheme.button.copyWith(color: Colors.white),
+        style: Theme.of(context).textTheme.labelLarge.copyWith(color: Colors.white),
       ),
       onPressed: () => _openImage(),
     );
