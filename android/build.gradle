@@ -2,30 +2,40 @@ group 'com.lykhonis.imagecrop'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    repositories {
-        google()
-        jcenter()
+    ext {
+        kotlin_version = '2.1.10'
+        agp_version = '8.7.3'
     }
-
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        google()
+    }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.4.1'
+        classpath "com.android.tools.build:gradle:$agp_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 rootProject.allprojects {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
+        gradlePluginPortal()
+        maven {
+            url 'https://storage.googleapis.com/download.flutter.io'
+        }
     }
 }
 
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
+    namespace "com.lykhonis.imagecrop"
+    compileSdkVersion 35
 
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 21
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     lintOptions {
